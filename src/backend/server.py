@@ -8,24 +8,8 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# ==============================
-# TUMHARA CLOUDINARY LINK - YAHI PE HARDCODED HAI
-# ==============================
-# Ab frontend me URL bhejne ki zarurat nahi
-DEFAULT_TEMPLATE_URL = "https://res.cloudinary.com/httsesgq/image/upload/v1788294115/star_sapphire_3.png"
-
-# 72 templates ke liye baad me yaha list banayenge
-TEMPLATE_CONFIG = {
-    "default": {
-        "leader": {"left": 0.038, "top": 0.065, "size": 0.235},
-        "achiever": {"left": 0.688, "top": 0.688, "size": 0.202},
-        "leader_name": {"left": 0.515, "top": 0.212, "font_size": 0.0332, "font": "Frasa"},
-        "leader_place": {"left": 0.515, "top": 0.268, "font_size": 0.0332, "font": "Frasa"},
-        "achiever_name": {"left": 0.255, "top": 0.732, "font_size": 0.0293, "font": "Garat"},
-        "rank": {"left": 0.255, "top": 0.758, "font_size": 0.0254, "font": "Alice"},
-        "phone": {"left": 0.095, "top": 0.830, "font_size": 0.0166, "font": "Canva"}
-    }
-}
+# FINAL TEMPLATE URL
+DEFAULT_TEMPLATE_URL = "https://res.cloudinary.com/httsesgq/image/upload/star_sapphire_3.png"
 
 def get_font(font_type, size):
     base_dir = os.path.dirname(__file__)
@@ -40,13 +24,7 @@ def get_font(font_type, size):
         path = os.path.join(fonts_dir, fname)
         if os.path.exists(path):
             try:
-                return ImageFont.truetype(path, size)
-            except: pass
-    
-    for p in ["C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf"]:
-        if os.path.exists(p):
-            try:
-                return ImageFont.truetype(p, size)
+                return ImageFont.truetype(path, int(size))
             except: pass
     return ImageFont.load_default()
 
@@ -64,12 +42,14 @@ def create_circle_photo(photo_file, size):
     result.paste(photo, (0, 0), mask)
     return result
 
-def draw_text_with_shadow(image, text, x, y, font_size, font_type):
+def draw_text_with_shadow(image, text, x, y, font_size, font_type, color="white"):
     draw = ImageDraw.Draw(image)
-    font = get_font(font_type, int(font_size))
+    font = get_font(font_type, font_size)
     shadow_offset = max(2, int(font_size * 0.06))
-    draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=(0,0,0,160))
-    draw.text((x, y), text, font=font, fill="white")
+    # shadow
+    shadow_color = (0,0,0,160) if color != "black" else (255,255,255,100)
+    draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=shadow_color)
+    draw.text((x, y), text, font=font, fill=color)
 
 @app.route("/health")
 def health():
@@ -78,7 +58,6 @@ def health():
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
-        # YAHAN SE URL AAYEGA - AGAR FRONTEND SE AAYA TOH WOH, NAHI TOH TUMHARA DEFAULT WALA
         template_url = request.form.get("template_url")
         if not template_url or template_url.strip() == "":
             template_url = DEFAULT_TEMPLATE_URL
@@ -93,45 +72,32 @@ def generate():
 
         response = requests.get(template_url, timeout=20)
         poster = Image.open(BytesIO(response.content)).convert("RGBA")
+        
+        # FIXED SIZE - Isse alignment hamesha same rahega
+        poster = poster.resize((1024, 1536), Image.LANCZOS)
         width, height = poster.size
-        config = TEMPLATE_CONFIG["default"]
 
+        # FINAL COORDINATES - Measured from your screenshot
         if leader_photo and leader_photo.filename != "":
-            size = int(width * config["leader"]["size"])
+            size = 332  # upper circle size
             circle = create_circle_photo(leader_photo, size)
-            x = int(width * config["leader"]["left"])
-            y = int(height * config["leader"]["top"])
-            poster.alpha_composite(circle, (x, y))
+            poster.alpha_composite(circle, (58, 195))
 
         if achiever_photo and achiever_photo.filename != "":
-            size = int(width * config["achiever"]["size"])
+            size = 245  # lower circle size
             circle = create_circle_photo(achiever_photo, size)
-            x = int(width * config["achiever"]["left"])
-            y = int(height * config["achiever"]["top"])
-            poster.alpha_composite(circle, (x, y))
+            poster.alpha_composite(circle, (710, 1005))
 
         if leader_name:
-            x = int(width * config["leader_name"]["left"])
-            y = int(height * config["leader_name"]["top"])
-            draw_text_with_shadow(poster, leader_name, x, y, width * config["leader_name"]["font_size"], config["leader_name"]["font"])
+            draw_text_with_shadow(poster, leader_name, 530, 560, 32, "Frasa", "#C5A35C")
         if leader_place:
-            x = int(width * config["leader_place"]["left"])
-            y = int(height * config["leader_place"]["top"])
-            draw_text_with_shadow(poster, leader_place, x, y, width * config["leader_place"]["font_size"], config["leader_place"]["font"])
+            draw_text_with_shadow(poster, leader_place, 530, 610, 26, "Frasa", "white")
         if achiever_name:
-            x = int(width * config["achiever_name"]["left"])
-            y = int(height * config["achiever_name"]["top"])
-            draw_text_with_shadow(poster, achiever_name, x, y, width * config["achiever_name"]["font_size"], config["achiever_name"]["font"])
+            draw_text_with_shadow(poster, achiever_name, 130, 1100, 28, "Garat", "white")
         if rank:
-            rank_text = f"AWPL, {rank}"
-            x = int(width * config["rank"]["left"])
-            y = int(height * config["rank"]["top"])
-            draw_text_with_shadow(poster, rank_text, x, y, width * config["rank"]["font_size"], config["rank"]["font"])
+            draw_text_with_shadow(poster, f"AWPL, {rank}", 130, 1145, 22, "Alice", "white")
         if phone:
-            phone_text = f"FOR SUCCESS CALL ON - {phone}"
-            x = int(width * config["phone"]["left"])
-            y = int(height * config["phone"]["top"])
-            draw_text_with_shadow(poster, phone_text, x, y, width * config["phone"]["font_size"], config["phone"]["font"])
+            draw_text_with_shadow(poster, f"FOR SUCCESS CALL ON - {phone}", 100, 1295, 18, "Canva", "black")
 
         output = BytesIO()
         poster.convert("RGB").save(output, format="PNG")
@@ -143,4 +109,4 @@ def generate():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
