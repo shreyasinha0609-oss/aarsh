@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDJ9C0J4Lw8BBBoLeahdgLJpid0-ra5eBc",
+  apiKey: "AIzaSyDJ9C0J4Lw8BBoOLeahdgLJpid0-ra5eBc",
   authDomain: "aarsh-live.firebaseapp.com",
   projectId: "aarsh-live",
   storageBucket: "aarsh-live.firebasestorage.app",
