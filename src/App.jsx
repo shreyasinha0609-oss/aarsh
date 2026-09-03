@@ -4,13 +4,14 @@ import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 
-const RANKS = ["Rank 1: Bronze","Rank 2: Silver","Rank 3: Gold","Rank 4: Platinum","Rank 5: Emerald","Rank 6: Topaz","Rank 7: Ruby Star","Rank 8: Sapphire","Rank 9: Star Sapphire","Rank 10: Daimond","Rank 11: Blue Daimond","Rank 12: Black Daimond","Rank 13: Royal Daimond","Rank 14: Crown Daimond","Rank 15: Ambassador","Rank 16: Royal Ambassador","Rank 17: Crown Ambassador","Rank 18: Brand Ambassador"];
+const BACKEND_URL = "https://aarsh.onrender.com"; // Tera live backend
+
+const RANKS = ["Rank 1: Bronze","Rank 2: Silver","Rank 3: Gold","Rank 4: Platinum","Rank 5: Emerald","Rank 6: Topaz","Rank 7: Ruby Star","Rank 8: Sapphire","Rank 9: Star Sapphire","Rank 10: Diamond","Rank 11: Blue Diamond","Rank 12: Black Diamond","Rank 13: Royal Diamond","Rank 14: Crown Diamond","Rank 15: Ambassador","Rank 16: Royal Ambassador","Rank 17: Crown Ambassador","Rank 18: Brand Ambassador"];
 const CLOUD_NAME = "httsesgq";
 const CLOUDINARY_BASE = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`;
 const templateColors = { 1: "#6D28D9", 2: "#059669", 3: "#2563EB", 4: "#EA580C", 5: "#DB2777" };
 const getRankSlug = (rankStr) => { const part = rankStr.split(':')[1] || rankStr; return part.trim().toLowerCase().replace(/\s+/g,'_'); };
 
-// ✅ COMPATIBLE CONFIG TABLE - Yahi se alignment control hoga
 const TEMPLATE_CONFIG = {
   default: {
     leader: { left: '3.8%', top: '6.5%', size: '23.5%' },
@@ -37,23 +38,52 @@ export default function App() {
   const [errors, setErrors] = useState({});
   const posterRef = useRef(null);
 
-  const buyCredits = () => {
-    if (!window.Razorpay) { alert("Razorpay script load nahi hua!"); return; }
-    const options = {
-      key: "rzp_test_TWZIKHjHcfqDIR", amount: 10000, currency: "INR", name: "Aarsh AI", description: "100 Credits Pack",
-      prefill: { name: user.displayName || "Test User", email: user.email || "test@test.com", contact: "9999999999" },
-      handler: async function (response) {
-        try {
-          const userRef = doc(db, "users", user.uid);
-          await updateDoc(userRef, { credits: points + 100 });
-          setPoints(points + 100);
-          alert("Payment Success! 100 Credits Added ✅ ID: " + response.razorpay_payment_id);
-        } catch(e){ alert(e.message) }
-      },
-      theme: { color: "#6D28D9" }
-    };
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+  const buyCredits = async () => {
+    if (!window.Razorpay) { alert("Razorpay load nahi hua!"); return; }
+    try {
+      // 1. Backend se order banao
+      const res = await fetch(`${BACKEND_URL}/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 100 })
+      });
+      const order = await res.json();
+
+      const options = {
+        key: order.key_id, // Backend se ayega, secure
+        amount: order.amount,
+        currency: "INR",
+        name: "Aarsh AI",
+        description: "100 Credits Pack",
+        order_id: order.id,
+        prefill: { name: user.displayName, email: user.email, contact: "9999999999" },
+        handler: async function (response) {
+          // 2. Backend pe verify karo
+          const verifyRes = await fetch(`${BACKEND_URL}/verify-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({...response, uid: user.uid })
+          });
+          const data = await verifyRes.json();
+          if(data.success){
+            setPoints(data.newCredits);
+            alert("Payment Success! 100 Credits Added ✅");
+          } else {
+            alert("Payment verification failed!");
+          }
+        },
+        theme: { color: "#6D28D9" }
+      };
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch(e){
+      alert("Order create failed: " + e.message + " - Check backend");
+      // Fallback for testing if backend doesn't have razorpay routes yet
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, { credits: points + 100 });
+      setPoints(points + 100);
+      alert("Test Mode: 100 Credits Added (Backend routes banao to secure hoga)");
+    }
   };
 
   useEffect(() => {
@@ -96,7 +126,6 @@ export default function App() {
       setStep(3);
     } catch(e){ alert("Error updating credits: " + e.message); }
   }
-
   const download = async () => {
     if(!posterRef.current) return;
     const canvas = await html2canvas(posterRef.current, { scale: 3, useCORS: true, backgroundColor: null, allowTaint: true });
@@ -105,7 +134,6 @@ export default function App() {
     a.href = canvas.toDataURL('image/png');
     a.click();
   }
-
   const inputClass = (hasError) => `border p-3 rounded-xl w-full outline-none transition-all ${hasError? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200'}`;
   const labelClass = (hasError) => `w-full border-2 border-dashed p-4 rounded-xl flex flex-col items-center cursor-pointer mb-4 font-medium transition-all ${hasError? 'border-red-500 bg-red-50 text-red-600' : 'border-purple-300 bg-purple-50/60'}`;
   const posterUrl = `${CLOUDINARY_BASE}/${getRankSlug(rank)}_${tpl}.png`;
@@ -125,7 +153,6 @@ export default function App() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed" style={{backgroundImage:`url('/bg.jpg'), linear-gradient(135deg, #FFD6E8 0%, #E9D5FF 50%, #BFDBFE 100%)`}}>
       <div className="max-w-[1400px] mx-auto bg-white/85 backdrop-blur-xl flex flex-col md:flex-row justify-between items-center gap-2 px-4 md:px-6 py-3 rounded-b-2xl md:rounded-2xl mx-2 md:mx-auto mt-0 md:mt-3 border border-white/60 shadow-lg">
@@ -140,7 +167,6 @@ export default function App() {
           <button onClick={handleLogout} className="bg-white border px-3 py-1.5 rounded-full font-bold text-xs hover:bg-gray-50">Logout</button>
         </div>
       </div>
-
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 px-2 md:px-4 pb-10 mt-4">
         <div className="bg-white/90 backdrop-blur p-4 md:p-6 rounded-[22px] border border-white shadow-xl order-2 lg:order-1">
           {step===1 && (
@@ -191,11 +217,9 @@ export default function App() {
             </div>
           )}
         </div>
-
         <div className="bg-white/90 backdrop-blur p-4 md:p-6 rounded-[22px] border border-white shadow-xl h-fit lg:sticky top-3 order-1 lg:order-2">
           <h2 className="font-black text-center">👁️ Live Preview - 100% Exact</h2>
           <p className="text-center text-xs text-gray-500 mb-3">Template: {getRankSlug(rank)}_{tpl}</p>
-
           <div ref={posterRef} className="relative w-full rounded-xl overflow-hidden border shadow bg-white">
             <img src={posterUrl} alt="template" className="w-full h-auto block" crossOrigin="anonymous" />
             {lPhoto && <img src={lPhoto} alt="leader" className="absolute rounded-full object-cover" style={{left:cfg.leader.left, top:cfg.leader.top, width:cfg.leader.size, aspectRatio:'1', objectFit:'cover', border:'3px solid #c9a86a'}} />}
@@ -206,7 +230,6 @@ export default function App() {
             <div className="absolute font-bold text-[#0a2342]" style={{left:cfg.rank.left, top:cfg.rank.top, fontSize:cfg.rank.fontSize}}>AWPL, {(lRank.split(':')[1]||lRank).toUpperCase()}</div>
             <div className="absolute font-black text-black text-center bg-white rounded-full" style={{left:cfg.phone.left, top:cfg.phone.top, fontSize:cfg.phone.fontSize, width:cfg.phone.width, padding:'0.8% 0'}}>{lPh}</div>
           </div>
-
           <div className="grid grid-cols-2 gap-3 mt-4"><button onClick={download} className="bg-gradient-to-r from-pink-500 to-blue-600 text-white py-3 rounded-xl font-black text-sm shadow">⬇ Download PNG</button><button onClick={()=>window.location.reload()} className="border border-purple-200 py-3 rounded-xl font-bold text-sm">↻ Refresh</button></div>
         </div>
       </div>
