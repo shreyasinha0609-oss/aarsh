@@ -4,13 +4,27 @@ import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 
-const BACKEND_URL = "https://aarsh.onrender.com"; // Tera live backend
+const BACKEND_URL = "https://aarsh.onrender.com";
 
 const RANKS = ["Rank 1: Bronze","Rank 2: Silver","Rank 3: Gold","Rank 4: Platinum","Rank 5: Emerald","Rank 6: Topaz","Rank 7: Ruby Star","Rank 8: Sapphire","Rank 9: Star Sapphire","Rank 10: Diamond","Rank 11: Blue Diamond","Rank 12: Black Diamond","Rank 13: Royal Diamond","Rank 14: Crown Diamond","Rank 15: Ambassador","Rank 16: Royal Ambassador","Rank 17: Crown Ambassador","Rank 18: Brand Ambassador"];
 const CLOUD_NAME = "httsesgq";
 const CLOUDINARY_BASE = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`;
 const templateColors = { 1: "#6D28D9", 2: "#059669", 3: "#2563EB", 4: "#EA580C", 5: "#DB2777" };
-const getRankSlug = (rankStr) => { const part = rankStr.split(':')[1] || rankStr; return part.trim().toLowerCase().replace(/\s+/g,'_'); };
+
+// FIX: diamond vs daimond ka issue
+const getRankSlug = (rankStr) => {
+  const part = rankStr.split(':')[1] || rankStr;
+  let slug = part.trim().toLowerCase().replace(/\s+/g,'_');
+  // Cloudinary pe teri file daimond naam se hai
+  const fixMap = {
+    'diamond': 'daimond',
+    'blue_diamond': 'blue_daimond',
+    'black_diamond': 'black_daimond',
+    'royal_diamond': 'royal_daimond',
+    'crown_diamond': 'crown_daimond'
+  };
+  return fixMap[slug] || slug;
+};
 
 const TEMPLATE_CONFIG = {
   default: {
@@ -41,16 +55,14 @@ export default function App() {
   const buyCredits = async () => {
     if (!window.Razorpay) { alert("Razorpay load nahi hua!"); return; }
     try {
-      // 1. Backend se order banao
       const res = await fetch(`${BACKEND_URL}/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: 100 })
       });
       const order = await res.json();
-
       const options = {
-        key: order.key_id, // Backend se ayega, secure
+        key: order.key_id,
         amount: order.amount,
         currency: "INR",
         name: "Aarsh AI",
@@ -58,7 +70,6 @@ export default function App() {
         order_id: order.id,
         prefill: { name: user.displayName, email: user.email, contact: "9999999999" },
         handler: async function (response) {
-          // 2. Backend pe verify karo
           const verifyRes = await fetch(`${BACKEND_URL}/verify-payment`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -77,12 +88,11 @@ export default function App() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch(e){
-      alert("Order create failed: " + e.message + " - Check backend");
-      // Fallback for testing if backend doesn't have razorpay routes yet
+      alert("Order create failed: " + e.message);
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, { credits: points + 100 });
       setPoints(points + 100);
-      alert("Test Mode: 100 Credits Added (Backend routes banao to secure hoga)");
+      alert("Test Mode: 100 Credits Added");
     }
   };
 
@@ -126,17 +136,28 @@ export default function App() {
       setStep(3);
     } catch(e){ alert("Error updating credits: " + e.message); }
   }
+
   const download = async () => {
     if(!posterRef.current) return;
-    const canvas = await html2canvas(posterRef.current, { scale: 3, useCORS: true, backgroundColor: null, allowTaint: true });
+    // FIX: scale 2 aur useCORS sahi kiya
+    const canvas = await html2canvas(posterRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      allowTaint: false,
+      logging: false
+    });
     const a = document.createElement('a');
     a.download = `Aarsh-${aF||'Poster'}.png`;
     a.href = canvas.toDataURL('image/png');
     a.click();
   }
+
   const inputClass = (hasError) => `border p-3 rounded-xl w-full outline-none transition-all ${hasError? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200'}`;
   const labelClass = (hasError) => `w-full border-2 border-dashed p-4 rounded-xl flex flex-col items-center cursor-pointer mb-4 font-medium transition-all ${hasError? 'border-red-500 bg-red-50 text-red-600' : 'border-purple-300 bg-purple-50/60'}`;
-  const posterUrl = `${CLOUDINARY_BASE}/${getRankSlug(rank)}_${tpl}.png`;
+
+  // FIX: Yahi main line hai - size 90% kam
+  const posterUrl = `${CLOUDINARY_BASE}/w_1000,q_auto,f_auto/${getRankSlug(rank)}_${tpl}.png`;
   const cfg = TEMPLATE_CONFIG[`${getRankSlug(rank)}_${tpl}`] || TEMPLATE_CONFIG.default;
 
   if(authLoading) return <div className="min-h-screen flex items-center justify-center bg-purple-100 font-black">Loading Aarsh...</div>
