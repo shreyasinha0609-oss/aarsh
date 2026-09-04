@@ -4,9 +4,21 @@ from PIL import Image, ImageDraw, ImageFont
 import requests
 from io import BytesIO
 import os
+import razorpay
+import hmac
+import hashlib
 
 app = Flask(__name__)
 CORS(app)
+
+# ==========================================
+# RAZORPAY CONFIGURATION
+# Dashboard se mili hui actual Keys ko yahan paste karein
+RAZORPAY_KEY_ID = "rzp_live_TXxXsCX79t33yI"
+RAZORPAY_KEY_SECRET = "T87XYAUr7glt6mGZmGRjUaxT"
+
+razor_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+# ==========================================
 
 # FINAL TEMPLATE URL
 DEFAULT_TEMPLATE_URL = "https://res.cloudinary.com/httsesgq/image/upload/star_sapphire_3.png"
@@ -46,7 +58,6 @@ def draw_text_with_shadow(image, text, x, y, font_size, font_type, color="white"
     draw = ImageDraw.Draw(image)
     font = get_font(font_type, font_size)
     shadow_offset = max(2, int(font_size * 0.06))
-    # shadow
     shadow_color = (0,0,0,160) if color != "black" else (255,255,255,100)
     draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=shadow_color)
     draw.text((x, y), text, font=font, fill=color)
@@ -54,6 +65,72 @@ def draw_text_with_shadow(image, text, x, y, font_size, font_type, color="white"
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
+
+# ==========================================
+# DYNAMIC RAZORPAY API ENDPOINTS
+# ==========================================
+
+@app.route("/create-order", methods=["POST"])
+def create_order():
+    try:
+        data = request.get_json() or {}
+        # Amount in rupees equal to selected points (1 Point = ₹1)
+        amount_in_rupees = data.get("amount", 100)
+        amount_in_paise = int(amount_in_rupees) * 100
+
+        order_data = {
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "payment_capture": 1
+        }
+        order = razor_client.order.create(data=order_data)
+
+        return jsonify({
+            "id": order["id"],
+            "amount": order["amount"],
+            "currency": order["currency"],
+            "key_id": RAZORPAY_KEY_ID
+        })
+    except Exception as e:
+        print("Razorpay Order Creation Error:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/verify-payment", methods=["POST"])
+def verify_payment():
+    try:
+        data = request.get_json() or {}
+        razorpay_order_id = data.get("razorpay_order_id")
+        razorpay_payment_id = data.get("razorpay_payment_id")
+        razorpay_signature = data.get("razorpay_signature")
+        selected_points = data.get("selectedPoints", 100)
+
+        # Signature verification
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        generated_signature = hmac.new(
+            RAZORPAY_KEY_SECRET.encode('utf-8'),
+            msg.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+
+        if generated_signature == razorpay_signature:
+            # Payment Successful & Verified
+            return jsonify({
+                "success": True,
+                "message": "Payment verified successfully",
+                "addedPoints": selected_points
+            })
+        else:
+            return jsonify({"success": False, "message": "Invalid Signature"}), 400
+
+    except Exception as e:
+        print("Razorpay Payment Verification Error:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+# ==========================================
+# POSTER GENERATION ENDPOINT
+# ==========================================
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -73,18 +150,15 @@ def generate():
         response = requests.get(template_url, timeout=20)
         poster = Image.open(BytesIO(response.content)).convert("RGBA")
         
-        # FIXED SIZE - Isse alignment hamesha same rahega
         poster = poster.resize((1024, 1536), Image.LANCZOS)
-        width, height = poster.size
 
-        # FINAL COORDINATES - Measured from your screenshot
         if leader_photo and leader_photo.filename != "":
-            size = 332  # upper circle size
+            size = 332
             circle = create_circle_photo(leader_photo, size)
             poster.alpha_composite(circle, (58, 195))
 
         if achiever_photo and achiever_photo.filename != "":
-            size = 245  # lower circle size
+            size = 245
             circle = create_circle_photo(achiever_photo, size)
             poster.alpha_composite(circle, (710, 1005))
 
