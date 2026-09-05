@@ -19,6 +19,15 @@ const CLOUD_NAME = "httsesgq";
 const CLOUDINARY_BASE = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`;
 const templateColors = { 1: "#6D28D9", 2: "#059669", 3: "#2563EB", 4: "#EA580C", 5: "#DB2777" };
 
+const RECHARGE_OPTIONS = [
+  { points: 30, price: 30 },
+  { points: 100, price: 100 },
+  { points: 200, price: 200 },
+  { points: 500, price: 500 },
+  { points: 1000, price: 1000 },
+  { points: 2000, price: 2000 },
+];
+
 const getRankSlug = (rankStr) => {
   const part = rankStr.split(':')[1] || rankStr;
   let slug = part.trim().toLowerCase().replace(/\s+/g,'_');
@@ -50,112 +59,72 @@ export default function App() {
   const [rank, setRank] = useState(RANKS[0]);
   const [tpl, setTpl] = useState(1);
   const [themeColor, setThemeColor] = useState(templateColors[1]);
-  const [textColor, setTextColor] = useState('#ffffff');
 
-  // Form States (Leader = Top Section, Achiever = Bottom Section)
+  // Form States
   const [lPre, setLPre] = useState('Mr.'); 
   const [lF, setLF] = useState(''); 
   const [lL, setLL] = useState(''); 
   const [lCity, setLCity] = useState(''); 
+  const [lTextColor, setLTextColor] = useState('#ffffff');
   const [lPhoto, setLPhoto] = useState(null);
 
   const [aPre, setAPre] = useState('Mr.'); 
   const [aF, setAF] = useState(''); 
   const [aL, setAL] = useState(''); 
-  const [lPh, setLPh] = useState('');
-  const [aCity, setACity] = useState(''); 
+  const aCompany = "AWPL"; 
+  const aPhoneCode = "+91"; 
+  const [aPh, setAPh] = useState('');
   const [aPhoto, setAPhoto] = useState(null);
+  const [aTextColor, setATextColor] = useState('#ffffff');
 
   const [points, setPoints] = useState(0);
   const [errors, setErrors] = useState({});
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(RECHARGE_OPTIONS[0]);
   const posterRef = useRef(null);
 
-  // Recharge Modal States
-  const [showRechargeModal, setShowRechargeModal] = useState(false);
-  const [selectedPointsOption, setSelectedPointsOption] = useState(100);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-
-  const RECHARGE_OPTIONS = [
-    { points: 30, price: 30 },
-    { points: 100, price: 100, popular: true },
-    { points: 200, price: 200 },
-    { points: 500, price: 500 },
-    { points: 1000, price: 1000 },
-    { points: 2000, price: 2000 }
-  ];
-
-  const handleRazorpayPayment = async (amountToPay) => {
-    if (!window.Razorpay) { 
-      alert("Razorpay SDK failed to load! Please check your network connection."); 
-      return; 
-    }
-    
-    setIsProcessingPayment(true);
+  const buyCredits = async (plan) => {
+    if (!window.Razorpay) { alert("Razorpay SDK fail to load!"); return; }
     try {
       const res = await fetch(`${BACKEND_URL}/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amountToPay })
+        body: JSON.stringify({ amount: plan.price })
       });
       const order = await res.json();
-
-      if (order.error) {
-        throw new Error(order.error);
+      if (!order.id) {
+        alert("Order initialization failed: " + (order.error || "Unknown error"));
+        return;
       }
-
       const options = {
         key: order.key_id,
         amount: order.amount,
         currency: "INR",
-        name: "Aarsh AI Poster Generator",
-        description: `Recharge ${amountToPay} Points`,
+        name: "Aarsh AI",
+        description: `${plan.points} Points Pack`,
         order_id: order.id,
-        prefill: { 
-          name: user?.displayName || "", 
-          email: user?.email || "", 
-          contact: lPh || "9999999999" 
-        },
+        prefill: { name: user.displayName, email: user.email, contact: "9999999999" },
         handler: async function (response) {
-          try {
-            const verifyRes = await fetch(`${BACKEND_URL}/verify-payment`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ...response, 
-                uid: user.uid,
-                selectedPoints: amountToPay 
-              })
-            });
-            const data = await verifyRes.json();
-            if(data.success){
-              const userRef = doc(db, "users", user.uid);
-              const updatedCredits = points + data.addedPoints;
-              await updateDoc(userRef, { credits: updatedCredits });
-              setPoints(updatedCredits);
-              setShowRechargeModal(false);
-              alert(`🎉 Success! ${data.addedPoints} Points added to your account.`);
-            } else {
-              alert("❌ Payment verification failed! Please contact support.");
-            }
-          } catch (err) {
-            alert("Verification error: " + err.message);
-          } finally {
-            setIsProcessingPayment(false);
-          }
-        },
-        modal: {
-          ondismiss: function() {
-            setIsProcessingPayment(false);
+          const verifyRes = await fetch(`${BACKEND_URL}/verify-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({...response, uid: user.uid, points: plan.points })
+          });
+          const data = await verifyRes.json();
+          if(data.success){
+            setPoints(data.newCredits);
+            setShowRechargeModal(false);
+            alert(`Payment Verified! ${plan.points} Points Added ✅`);
+          } else {
+            alert("Payment verification failed!");
           }
         },
         theme: { color: "#6D28D9" }
       };
-
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch(e){
-      alert("Order initialization failed: " + e.message);
-      setIsProcessingPayment(false);
+      alert("Order initialization error: " + e.message);
     }
   };
 
@@ -166,13 +135,7 @@ export default function App() {
         const userRef = doc(db, "users", currentUser.uid);
         const snap = await getDoc(userRef);
         if(!snap.exists()){
-          await setDoc(userRef, { 
-            name: currentUser.displayName, 
-            email: currentUser.email, 
-            photo: currentUser.photoURL, 
-            lastLogin: new Date(), 
-            credits: 0 
-          });
+          await setDoc(userRef, { name: currentUser.displayName, email: currentUser.email, photo: currentUser.photoURL, lastLogin: new Date(), credits: 0 });
           setPoints(0);
         } else {
           setPoints(snap.data().credits ?? 0);
@@ -196,12 +159,12 @@ export default function App() {
     const newErrors = {};
     if(!lF.trim()) newErrors.lF = true; 
     if(!lL.trim()) newErrors.lL = true; 
-    if(!lPh.trim()) newErrors.lPh = true; 
+    if(!lCity.trim()) newErrors.lCity = true; 
     if(!lPhoto) newErrors.lPhoto = true;
 
     if(!aF.trim()) newErrors.aF = true; 
     if(!aL.trim()) newErrors.aL = true; 
-    if(!aCity.trim()) newErrors.aCity = true; 
+    if(!aPh.trim()) newErrors.aPh = true; 
     if(!aPhoto) newErrors.aPhoto = true;
     
     setErrors(newErrors); 
@@ -210,11 +173,7 @@ export default function App() {
 
   const generate = async () => {
     if(!validateStep2()) return;
-    if(points < 5){ 
-      alert('Insufficient Credits (Requires 5 Points). Please recharge your wallet.'); 
-      setShowRechargeModal(true);
-      return; 
-    }
+    if(points < 5){ alert('Insufficient Credits (Requires 5). Please purchase more.'); return; }
     try {
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, { credits: points - 5 });
@@ -245,7 +204,7 @@ export default function App() {
 
   const posterUrl = `${CLOUDINARY_BASE}/w_1067,q_auto,f_auto/${getRankSlug(rank)}_${tpl}.png`;
 
-  const getTextStyle = (config) => ({
+  const getTextStyle = (config, customColor) => ({
     position: 'absolute',
     left: `${(config.x / 1067) * 100}%`,
     top: `${(config.y / 1600) * 100}%`,
@@ -253,7 +212,7 @@ export default function App() {
     height: `${(config.h / 1600) * 100}%`,
     fontSize: `${config.size * 0.9}px`,
     fontFamily: config.font,
-    color: textColor,
+    color: customColor,
     textShadow: '2px 2px 5px rgba(0, 0, 0, 0.85)',
     display: 'flex',
     alignItems: 'center',
@@ -262,7 +221,7 @@ export default function App() {
     zIndex: 10
   });
 
-  if(authLoading) return <div className="min-h-screen flex items-center justify-center bg-purple-100 font-bold text-purple-800">Loading system components...</div>;
+  if(authLoading) return <div className="min-h-screen flex items-center justify-center bg-purple-100 font-bold">Loading system components...</div>;
   
   if(!user){
     return (
@@ -271,9 +230,7 @@ export default function App() {
           <img src="/logo.png" alt="Aarsh Logo" className="w-24 h-24 md:w-32 md:h-32 mx-auto object-contain bg-white rounded-[24px] p-3 shadow-lg mb-4" />
           <h1 className="font-black text-5xl md:text-6xl bg-gradient-to-r from-pink-500 via-purple-600 to-blue-600 bg-clip-text text-transparent">Aarsh</h1>
           <p className="tracking-[0.3em] font-bold text-gray-500 text-xs mt-1">AI • POSTER GENERATOR</p>
-          <button onClick={handleLogin} className="w-full mt-8 bg-black text-white py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-3 hover:bg-gray-900 shadow-lg transition-all">
-            Sign in with Google
-          </button>
+          <button onClick={handleLogin} className="w-full mt-8 bg-black text-white py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-3 hover:bg-gray-900 shadow-lg">Sign in with Google</button>
         </div>
       </div>
     );
@@ -281,8 +238,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed" style={{backgroundImage:`linear-gradient(135deg, #FFD6E8 0%, #E9D5FF 50%, #BFDBFE 100%)`}}>
-      
-      {/* NAVBAR */}
+      {/* Header */}
       <div className="max-w-[1400px] mx-auto bg-white/85 backdrop-blur-xl flex flex-col md:flex-row justify-between items-center gap-2 px-4 md:px-6 py-3 rounded-b-2xl md:rounded-2xl mx-2 md:mx-auto mt-0 md:mt-3 border border-white/60 shadow-lg">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Aarsh Logo" className="w-11 h-11 md:w-12 md:h-12 object-contain bg-white rounded-xl p-1 shadow" />
@@ -292,33 +248,16 @@ export default function App() {
           </div>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="bg-gradient-to-r from-pink-500 to-blue-600 text-white px-4 py-1.5 rounded-full font-bold shadow">
-            ⭐ {points} Points
-          </span>
-          <button onClick={() => setShowRechargeModal(true)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-full font-bold text-xs shadow transition-all flex items-center gap-1">
-            ➕ Recharge
-          </button>
+          <span className="bg-gradient-to-r from-pink-500 to-blue-600 text-white px-4 py-1.5 rounded-full font-bold shadow">⭐ {points} Points</span>
+          <button onClick={() => setShowRechargeModal(true)} className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-full font-bold text-xs shadow">+ Recharge</button>
           <img src={user.photoURL} alt="user profile" className="w-8 h-8 rounded-full border-2 border-purple-200" />
           <button onClick={handleLogout} className="bg-white border px-3 py-1.5 rounded-full font-bold text-xs hover:bg-gray-50">Logout</button>
         </div>
       </div>
 
-      {/* MAIN CONTAINER */}
+      {/* Main Grid */}
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 px-2 md:px-4 pb-10 mt-4">
-        
-        {/* LEFT PANEL */}
         <div className="bg-white/90 backdrop-blur p-4 md:p-6 rounded-[22px] border border-white shadow-xl order-2 lg:order-1">
-          <div className="mb-6 p-4 bg-purple-50 rounded-2xl border border-purple-100">
-            <label className="font-black text-sm text-purple-900 block mb-2">🎨 Global Text Color:</label>
-            <div className="flex items-center gap-3">
-              <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer border-0" />
-              <div className="flex gap-2">
-                {['#ffffff', '#000000', '#facc15', '#38bdf8', '#f43f5e', '#a855f7'].map(color => (
-                  <button key={color} onClick={() => setTextColor(color)} className="w-7 h-7 rounded-full border border-gray-300 shadow-sm" style={{ backgroundColor: color }} />
-                ))}
-              </div>
-            </div>
-          </div>
 
           {step === 1 && (
             <>
@@ -344,34 +283,49 @@ export default function App() {
             <>
               <p className="text-purple-700 font-bold text-xs tracking-widest">STEP 2 • FORM ENTRY</p>
 
-              {/* LEADER SECTION */}
-              <h3 className="font-black text-xl mt-3 mb-3 tracking-wide bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">✦ Leader Information (Upper Circle)</h3>
-              <div className="grid grid-cols-1 md:grid-cols-[90px_1fr_1fr] gap-2 mb-2">
+              {/* LEADER INFORMATION */}
+              <h3 className="font-black text-xl mt-3 mb-3 tracking-wide bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">✦ Leader Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-[100px_1fr_1fr] gap-2 mb-2">
                 <select value={lPre} onChange={e => setLPre(e.target.value)} className="border border-gray-200 p-3 rounded-xl bg-white outline-none">
-                  <option>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option>
+                  <option value="Mr.">Mr.</option>
+                  <option value="Mrs.">Mrs.</option>
+                  <option value="Miss">Miss</option>
+                  <option value="Dr.">Dr.</option>
                 </select>
                 <input placeholder="First Name *" value={lF} onChange={e => {setLF(e.target.value); setErrors(p => ({...p, lF: false}))}} className={inputClass(errors.lF)} />
                 <input placeholder="Last Name *" value={lL} onChange={e => {setLL(e.target.value); setErrors(p => ({...p, lL: false}))}} className={inputClass(errors.lL)} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                <input placeholder="Leader City" value={lCity} onChange={e => setLCity(e.target.value)} className={inputClass(false)} />
-                <input placeholder="Contact Number *" value={lPh} onChange={e => {setLPh(e.target.value); setErrors(p => ({...p, lPh: false}))}} className={inputClass(errors.lPh)} />
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_80px] gap-2 mb-2 items-center">
+                <input placeholder="City *" value={lCity} onChange={e => {setLCity(e.target.value); setErrors(p => ({...p, lCity: false}))}} className={inputClass(errors.lCity)} />
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] font-bold text-gray-500 mb-1">Color</span>
+                  <input type="color" value={lTextColor} onChange={(e) => setLTextColor(e.target.value)} className="w-12 h-9 rounded-lg cursor-pointer border-0 p-0" />
+                </div>
               </div>
               <label className={labelClass(errors.lPhoto)}>☁️ Upload Leader Image (Upper Circle) *<input type="file" hidden onChange={onLeaderPhoto} accept="image/*" /></label>
 
-              {/* ACHIEVER SECTION */}
-              <h3 className="font-black text-xl mb-3 tracking-wide bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">✦ Achiever Information (Lower Circle)</h3>
-              <div className="grid grid-cols-1 md:grid-cols-[90px_1fr] gap-2 mb-2">
+              {/* ACHIEVER INFORMATION */}
+              <h3 className="font-black text-xl mb-3 tracking-wide bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">✦ Achiever Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-[100px_1fr_1fr] gap-2 mb-2">
                 <select value={aPre} onChange={e => setAPre(e.target.value)} className="border border-gray-200 p-3 rounded-xl bg-white outline-none">
-                  <option>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option>
+                  <option value="Mr.">Mr.</option>
+                  <option value="Mrs.">Mrs.</option>
+                  <option value="Miss">Miss</option>
+                  <option value="Dr.">Dr.</option>
                 </select>
                 <input placeholder="First Name *" value={aF} onChange={e => {setAF(e.target.value); setErrors(p => ({...p, aF: false}))}} className={inputClass(errors.aF)} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                 <input placeholder="Last Name *" value={aL} onChange={e => {setAL(e.target.value); setErrors(p => ({...p, aL: false}))}} className={inputClass(errors.aL)} />
-                <input placeholder="City *" value={aCity} onChange={e => {setACity(e.target.value); setErrors(p => ({...p, aCity: false}))}} className={inputClass(errors.aCity)} />
+              </div>
+              <div className="grid grid-cols-[90px_65px_1fr] gap-2 mb-2">
+                <input value={aCompany} readOnly className="border border-gray-200 p-3 rounded-xl bg-gray-100 font-bold text-center outline-none" />
+                <input value={aPhoneCode} readOnly className="border border-gray-200 p-3 rounded-xl bg-gray-100 text-center outline-none" />
+                <input placeholder="Mobile Number *" value={aPh} onChange={e => {setAPh(e.target.value); setErrors(p => ({...p, aPh: false}))}} className={inputClass(errors.aPh)} />
               </div>
               <label className={labelClass(errors.aPhoto)}>☁️ Upload Achiever Image (Lower Circle) *<input type="file" hidden onChange={onAchieverPhoto} accept="image/*" /></label>
+              <div className="flex items-center justify-between bg-purple-50 p-3 rounded-xl mb-4 border border-purple-100">
+                <span className="text-sm font-bold text-purple-900">Achiever Text Color:</span>
+                <input type="color" value={aTextColor} onChange={(e) => setATextColor(e.target.value)} className="w-12 h-8 rounded-lg cursor-pointer border-0 p-0" />
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => setStep(1)} className="border py-3 rounded-xl font-bold">← Back</button>
@@ -391,7 +345,7 @@ export default function App() {
           )}
         </div>
 
-        {/* CANVAS PREVIEW */}
+        {/* CANVAS PREVIEW TARGET */}
         <div className="bg-white/90 backdrop-blur p-4 md:p-6 rounded-[22px] border border-white shadow-xl h-fit lg:sticky top-3 order-1 lg:order-2">
           <h2 className="font-black text-center">👁️ Real-time Precise Alignment</h2>
           <p className="text-center text-xs text-gray-500 mb-3">Asset: {getRankSlug(rank)}_{tpl}</p>
@@ -399,7 +353,7 @@ export default function App() {
           <div ref={posterRef} className="relative w-full rounded-xl overflow-hidden border shadow bg-white" style={{ aspectRatio: '1067 / 1600' }}>
             <img src={posterUrl} alt="template frame" className="w-full h-full block" crossOrigin="anonymous" />
             
-            {/* 1. LEADER PHOTO */}
+            {/* UPPER CIRCLE = LEADER PHOTO */}
             <div 
               style={{
                 position: 'absolute',
@@ -413,19 +367,23 @@ export default function App() {
               }}
             >
               {lPhoto && (
-                <img src={lPhoto} alt="Leader" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img 
+                  src={lPhoto} 
+                  alt="Leader" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
               )}
             </div>
 
             {/* Leader Labels */}
-            <div style={getTextStyle(EXACT_COORDS.leaderNameBox)}>
+            <div style={getTextStyle(EXACT_COORDS.leaderNameBox, lTextColor)}>
               {lF || lL ? `${lPre} ${lF} ${lL}`.trim() : ''}
             </div>
-            <div style={getTextStyle(EXACT_COORDS.leaderCityBox)}>
-              {lCity}
+            <div style={getTextStyle(EXACT_COORDS.leaderCityBox, lTextColor)}>
+              {lCity ? lCity.toUpperCase() : ''}
             </div>
 
-            {/* 2. ACHIEVER PHOTO */}
+            {/* LOWER CIRCLE = ACHIEVER PHOTO */}
             <div 
               style={{
                 position: 'absolute',
@@ -439,78 +397,62 @@ export default function App() {
               }}
             >
               {aPhoto && (
-                <img src={aPhoto} alt="Achiever" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img 
+                  src={aPhoto} 
+                  alt="Achiever" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
               )}
             </div>
 
             {/* Achiever Labels */}
-            <div style={getTextStyle(EXACT_COORDS.achieverNameBox)}>
+            <div style={getTextStyle(EXACT_COORDS.achieverNameBox, aTextColor)}>
               {aF || aL ? `${aPre} ${aF} ${aL}`.trim() : ''}
             </div>
-            <div style={getTextStyle(EXACT_COORDS.achieverRankBox)}>
-              {rank}
+            <div style={getTextStyle(EXACT_COORDS.achieverRankBox, aTextColor)}>
+              {rank ? rank.toUpperCase() : ''}
             </div>
-            <div style={getTextStyle(EXACT_COORDS.phoneBox)}>
-              {lPh ? `${lPh}` : ''}
+            <div style={getTextStyle(EXACT_COORDS.phoneBox, aTextColor)}>
+              {aPh ? `${aPhoneCode} ${aPh}` : ''}
             </div>
 
           </div>
         </div>
-
       </div>
 
       {/* RECHARGE / POINTS SELECTION MODAL */}
       {showRechargeModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative border border-purple-100 animate-in fade-in zoom-in duration-200">
-            <button 
-              onClick={() => setShowRechargeModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-black text-xl font-bold w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"
-            >
-              ✕
-            </button>
-            
-            <div className="text-center mb-6">
-              <span className="text-4xl">⚡</span>
-              <h2 className="text-2xl font-black text-gray-900 mt-2">Recharge Wallet Points</h2>
-              <p className="text-xs text-gray-500 mt-1">Select points pack (1 Point = ₹1)</p>
+          <div className="bg-white rounded-[28px] max-w-md w-full p-6 shadow-2xl border border-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-black text-2xl bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Recharge Points</h3>
+              <button onClick={() => setShowRechargeModal(false)} className="text-gray-400 hover:text-black font-bold text-xl">✕</button>
             </div>
+            <p className="text-gray-500 text-sm mb-6">Choose a plan to instantly add points to your account.</p>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {RECHARGE_OPTIONS.map((item) => (
+              {RECHARGE_OPTIONS.map((plan) => (
                 <button
-                  key={item.points}
-                  onClick={() => setSelectedPointsOption(item.points)}
-                  className={`p-4 rounded-2xl border-2 text-left relative transition-all ${
-                    selectedPointsOption === item.points 
-                      ? 'border-purple-600 bg-purple-50 ring-2 ring-purple-200 shadow-md' 
+                  key={plan.points}
+                  onClick={() => setSelectedPlan(plan)}
+                  className={`p-4 rounded-2xl border-2 text-center transition-all ${
+                    selectedPlan.points === plan.points 
+                      ? 'border-purple-600 bg-purple-50 shadow-md scale-[1.02]' 
                       : 'border-gray-200 hover:border-purple-300 bg-white'
                   }`}
                 >
-                  {item.popular && (
-                    <span className="absolute -top-2.5 right-3 bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                      Popular
-                    </span>
-                  )}
-                  <p className="font-black text-xl text-purple-950">{item.points} <span className="text-xs text-purple-600">Points</span></p>
-                  <p className="text-sm font-bold text-gray-600">₹{item.price}</p>
+                  <p className="font-black text-xl text-purple-900">{plan.points} Points</p>
+                  <p className="text-xs text-gray-500 font-bold mt-1">₹{plan.price}</p>
                 </button>
               ))}
             </div>
 
             <button
-              onClick={() => handleRazorpayPayment(selectedPointsOption)}
-              disabled={isProcessingPayment}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-4 rounded-xl font-black text-base shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              onClick={() => buyCredits(selectedPlan)}
+              className="w-full bg-gradient-to-r from-pink-500 via-purple-600 to-blue-600 text-white py-4 rounded-xl font-black text-lg shadow-lg hover:opacity-95"
             >
-              {isProcessingPayment ? (
-                <span>Processing Payment...</span>
-              ) : (
-                <span>Pay ₹{selectedPointsOption} via UPI / Card / NetBanking →</span>
-              )}
+              Pay ₹{selectedPlan.price} with Razorpay
             </button>
-            
-            <p className="text-[11px] text-center text-gray-400 mt-4">🔒 Secured by Razorpay Payment Gateway</p>
           </div>
         </div>
       )}
