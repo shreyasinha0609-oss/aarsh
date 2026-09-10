@@ -266,9 +266,9 @@ export default function App() {
               <select value={rank} onChange={e => setRank(e.target.value)} className="w-full border-2 border-purple-200 p-3 md:p-4 rounded-xl mb-6 bg-white text-base outline-none focus:border-purple-500">
                 {RANKS.map(r => <option key={r}>{r}</option>)}
               </select>
-              <p className="font-black text-lg mb-3">Template Variants (1-5)</p>
+              <p className="font-black text-lg mb-3">Template Variants (1-15)</p>
               <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-8">
-                {[1, 2, 3, 4, 5].map(i => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(i => (
                   <button key={i} onClick={() => handleTemplate(i)} className={`h-24 md:h-28 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${tpl===i?'scale-105 shadow-lg border-2':'bg-white hover:border-purple-200'}`} style={{backgroundColor: tpl===i? templateColors[i]+'20' : 'white', borderColor: tpl===i? templateColors[i] : '#E5E7EB'}}>
                     <span className="text-2xl">{['🏆','🛡️','🏅','👑','🌿'][i-1]}</span>
                     <b className="text-sm">T-{i}</b>
