@@ -44,7 +44,7 @@ const getRankSlug = (rankStr) => {
 // Canvas Coordinates Standard (1067px x 1600px base)
 const EXACT_COORDS = {
   leaderCircle: { x: 45.9, y: 246.2, w: 359.2, h: 391.2 },
-  leaderNameBox: { x: 580.3, y: 560.4, w: 372.2, h: 42.8, size: 24, font: "'FrasaDisplay-Bold', Arial, sans-serif" },
+  leaderNameBox: { x: 590.3, y: 560.4, w: 372.2, h: 42.8, size: 23, font: "'FrasaDisplay-Bold', Arial, sans-serif" },
   leaderCityBox: { x: 699.3, y: 640.4, w: 359.2, h: 42.8, size: 27, font: "'Garat', Arial, sans-serif" },
   achieverCircle: { x: 777.9, y: 1114.9, w: 247, h: 304.5 },
   achieverNameBox: { x: 376.5, y: 1285, w: 379, h: 42.8, size: 24, font: "'FrasaDisplay-Bold', Arial, sans-serif" },
