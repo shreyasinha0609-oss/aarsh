@@ -1,3 +1,10 @@
+.poster-text-element {
+  position: absolute;
+  z-index: 10;
+  color: #ffffff;
+  font-family: Arial, sans-serif; /* Fallback system font zaroor rakhein */
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

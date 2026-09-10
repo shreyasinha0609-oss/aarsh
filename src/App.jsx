@@ -4,7 +4,7 @@ import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 
-const BACKEND_URL = "https://aarsh.onrender.com";
+const BACKEND_URL = "https://aarsh-backend.onrender.com"; // Updated Render backend URL
 
 const RANKS = [
   "Rank 1: Bronze","Rank 2: Silver","Rank 3: Gold","Rank 4: Platinum",
@@ -44,12 +44,12 @@ const getRankSlug = (rankStr) => {
 // Canvas Coordinates Standard (1067px x 1600px base)
 const EXACT_COORDS = {
   leaderCircle: { x: 45.9, y: 246.2, w: 359.2, h: 391.2 },
-  leaderNameBox: { x: 580.3, y: 560.4, w: 372.2, h: 42.8, size: 24, font: 'FrasaDisplay-Bold' },
-  leaderCityBox: { x: 699.3, y: 640.4, w: 359.2, h: 42.8, size: 27, font: 'Garat' },
+  leaderNameBox: { x: 580.3, y: 560.4, w: 372.2, h: 42.8, size: 24, font: "'FrasaDisplay-Bold', Arial, sans-serif" },
+  leaderCityBox: { x: 699.3, y: 640.4, w: 359.2, h: 42.8, size: 27, font: "'Garat', Arial, sans-serif" },
   achieverCircle: { x: 777.9, y: 1114.9, w: 247, h: 304.5 },
-  achieverNameBox: { x: 376.5, y: 1285, w: 379, h: 42.8, size: 24, font: 'FrasaDisplay-Bold' },
-  achieverRankBox: { x: 460.1, y: 1330, w: 359.2, h: 35.9, size: 13, font: 'FrasaDisplay-Bold' },
-  phoneBox: { x: 144.2, y: 1445.4, w: 205.6, h: 29.9, size: 18, font: 'ALICE' }
+  achieverNameBox: { x: 376.5, y: 1285, w: 379, h: 42.8, size: 24, font: "'FrasaDisplay-Bold', Arial, sans-serif" },
+  achieverRankBox: { x: 460.1, y: 1330, w: 359.2, h: 35.9, size: 13, font: "'FrasaDisplay-Bold', Arial, sans-serif" },
+  phoneBox: { x: 144.2, y: 1445.4, w: 205.6, h: 29.9, size: 18, font: "'ALICE', Arial, sans-serif" }
 };
 
 export default function App() {
@@ -81,6 +81,7 @@ export default function App() {
   const [errors, setErrors] = useState({});
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(RECHARGE_OPTIONS[0]);
+  const [isDownloading, setIsDownloading] = useState(false);
   const posterRef = useRef(null);
 
   const buyCredits = async (plan) => {
@@ -184,19 +185,46 @@ export default function App() {
     }
   };
 
+  // FIXED & UPGRADED DOWNLOAD FUNCTION
   const download = async () => {
-    if(!posterRef.current) return;
-    const canvas = await html2canvas(posterRef.current, {
-      scale: 3,
-      useCORS: true,
-      backgroundColor: null,
-      allowTaint: false,
-      logging: false
-    });
-    const link = document.createElement('a');
-    link.download = `Poster-${aF || 'Design'}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    if(!posterRef.current || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      // 1. Wait for all fonts (including Google Fonts/Custom Fonts) to load
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      // 2. Render Canvas with html2canvas options
+      const canvas = await html2canvas(posterRef.current, {
+        scale: 2, // High DPI resolution
+        useCORS: true, // Crucial for loading images & webfonts across domains
+        allowTaint: false,
+        backgroundColor: null,
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Ensure all text elements are fully visible in cloned document
+          const textElements = clonedDoc.querySelectorAll('[data-poster-text]');
+          textElements.forEach((el) => {
+            el.style.opacity = '1';
+            el.style.visibility = 'visible';
+            el.style.overflow = 'visible';
+          });
+        }
+      });
+
+      // 3. Trigger Download
+      const link = document.createElement('a');
+      link.download = `Poster-${aF || 'Design'}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      alert("Download failed: " + err.message);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const inputClass = (hasError) => `border p-3 rounded-xl w-full outline-none transition-all ${hasError ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200'}`;
@@ -217,7 +245,7 @@ export default function App() {
     display: 'flex',
     alignItems: 'center',
     whiteSpace: 'nowrap',
-    overflow: 'hidden',
+    overflow: 'visible',
     zIndex: 10
   });
 
@@ -339,7 +367,13 @@ export default function App() {
               <h2 className="text-3xl font-black bg-gradient-to-r from-pink-500 to-blue-600 bg-clip-text text-transparent">🎉 Canvas Render Complete</h2>
               <div className="grid grid-cols-2 gap-3 mt-6">
                 <button onClick={() => setStep(2)} className="border py-3 rounded-xl font-bold">← Back to Editor</button>
-                <button onClick={download} className="bg-black text-white py-3 rounded-xl font-black">⬇ Download Image</button>
+                <button 
+                  onClick={download} 
+                  disabled={isDownloading} 
+                  className="bg-black hover:bg-gray-900 text-white py-3 rounded-xl font-black transition-all flex items-center justify-center gap-2"
+                >
+                  {isDownloading ? "⏳ Generating HD Image..." : "⬇ Download Image"}
+                </button>
               </div>
             </div>
           )}
@@ -370,16 +404,17 @@ export default function App() {
                 <img 
                   src={lPhoto} 
                   alt="Leader" 
+                  crossOrigin="anonymous" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
               )}
             </div>
 
             {/* Leader Labels */}
-            <div style={getTextStyle(EXACT_COORDS.leaderNameBox, lTextColor)}>
+            <div data-poster-text style={getTextStyle(EXACT_COORDS.leaderNameBox, lTextColor)}>
               {lF || lL ? `${lPre} ${lF} ${lL}`.trim() : ''}
             </div>
-            <div style={getTextStyle(EXACT_COORDS.leaderCityBox, lTextColor)}>
+            <div data-poster-text style={getTextStyle(EXACT_COORDS.leaderCityBox, lTextColor)}>
               {lCity ? lCity.toUpperCase() : ''}
             </div>
 
@@ -400,19 +435,20 @@ export default function App() {
                 <img 
                   src={aPhoto} 
                   alt="Achiever" 
+                  crossOrigin="anonymous" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
               )}
             </div>
 
             {/* Achiever Labels */}
-            <div style={getTextStyle(EXACT_COORDS.achieverNameBox, aTextColor)}>
+            <div data-poster-text style={getTextStyle(EXACT_COORDS.achieverNameBox, aTextColor)}>
               {aF || aL ? `${aPre} ${aF} ${aL}`.trim() : ''}
             </div>
-            <div style={getTextStyle(EXACT_COORDS.achieverRankBox, aTextColor)}>
+            <div data-poster-text style={getTextStyle(EXACT_COORDS.achieverRankBox, aTextColor)}>
               {rank ? rank.toUpperCase() : ''}
             </div>
-            <div style={getTextStyle(EXACT_COORDS.phoneBox, aTextColor)}>
+            <div data-poster-text style={getTextStyle(EXACT_COORDS.phoneBox, aTextColor)}>
               {aPh ? `${aPhoneCode} ${aPh}` : ''}
             </div>
 
