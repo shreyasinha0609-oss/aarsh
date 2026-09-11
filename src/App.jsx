@@ -5,13 +5,12 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
-  RecaptchaVerifier,
-  signInWithPhoneNumber
+  signInWithCustomToken
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 
-const BACKEND_URL = "https://aarsh-backend.onrender.com";
+const BACKEND_URL = "https://aarsh.onrender.com";
 
 const RANKS = [
   "Rank 1: Bronze","Rank 2: Silver","Rank 3: Gold","Rank 4: Platinum",
@@ -129,16 +128,18 @@ export default function App() {
   const [tpl, setTpl] = useState(1);
   const [themeColor, setThemeColor] = useState(templateColors[1]);
 
-  // PHONE OTP STATES
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [phoneLoading, setPhoneLoading] = useState(false);
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  // USERNAME + 4-DIGIT PIN AUTH
+  const [profileReady, setProfileReady] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showPinLogin, setShowPinLogin] = useState(false);
 
-  // Firebase reCAPTCHA reference
-  const recaptchaVerifierRef = useRef(null);
+  const [setupUsername, setSetupUsername] = useState('');
+  const [setupPin, setSetupPin] = useState('');
+  const [setupLoading, setSetupLoading] = useState(false);
+
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPin, setLoginPin] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
 
   // Form States
   const [lPre, setLPre] = useState('Mr.');
@@ -164,187 +165,6 @@ export default function App() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const posterRef = useRef(null);
-
-  // =========================================================
-  // PHONE OTP - CLEANUP RECAPTCHA
-  // =========================================================
-
-  const clearRecaptcha = () => {
-    if (recaptchaVerifierRef.current) {
-      try {
-        recaptchaVerifierRef.current.clear();
-      } catch (e) {
-        console.log("reCAPTCHA cleanup:", e);
-      }
-
-      recaptchaVerifierRef.current = null;
-    }
-  };
-
-  // =========================================================
-  // SEND PHONE OTP
-  // =========================================================
-
-  const sendPhoneOTP = async () => {
-
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-
-    if (cleanPhone.length !== 10) {
-      alert("Please enter a valid 10-digit mobile number.");
-      return;
-    }
-
-    setPhoneLoading(true);
-
-    try {
-
-      clearRecaptcha();
-
-      // Create Firebase reCAPTCHA verifier
-      recaptchaVerifierRef.current = new RecaptchaVerifier(
-        auth,
-        'recaptcha-container',
-        {
-          size: 'normal',
-
-          callback: () => {
-            console.log("reCAPTCHA verified");
-          },
-
-          'expired-callback': () => {
-            alert("reCAPTCHA expired. Please try again.");
-          }
-        }
-      );
-
-      const formattedPhone = `+91${cleanPhone}`;
-
-      const result = await signInWithPhoneNumber(
-        auth,
-        formattedPhone,
-        recaptchaVerifierRef.current
-      );
-
-      setConfirmationResult(result);
-      setOtpSent(true);
-      setOtp('');
-
-      alert("OTP sent successfully 📱");
-
-    } catch (error) {
-
-      console.error("Phone OTP Error:", error);
-
-      clearRecaptcha();
-
-      if (error.code === 'auth/invalid-phone-number') {
-        alert("Invalid mobile number. Please check your number.");
-      }
-
-      else if (error.code === 'auth/too-many-requests') {
-        alert("Too many attempts. Please try again later.");
-      }
-
-      else if (error.code === 'auth/quota-exceeded') {
-        alert("SMS limit exceeded. Please try again later.");
-      }
-
-      else {
-        alert(error.message || "Unable to send OTP.");
-      }
-
-    } finally {
-      setPhoneLoading(false);
-    }
-  };
-
-  // =========================================================
-  // VERIFY PHONE OTP
-  // =========================================================
-
-  const verifyPhoneOTP = async () => {
-
-    if (!confirmationResult) {
-      alert("Please request OTP first.");
-      return;
-    }
-
-    if (otp.length !== 6) {
-      alert("Please enter the 6-digit OTP.");
-      return;
-    }
-
-    setPhoneLoading(true);
-
-    try {
-
-      await confirmationResult.confirm(otp);
-
-      // Firebase onAuthStateChanged will handle the login
-      setConfirmationResult(null);
-      setOtpSent(false);
-      setOtp('');
-      setPhoneNumber('');
-      setShowPhoneModal(false);
-
-      clearRecaptcha();
-
-    } catch (error) {
-
-      console.error("OTP Verification Error:", error);
-
-      if (error.code === 'auth/invalid-verification-code') {
-        alert("Invalid OTP. Please check the OTP and try again.");
-      }
-
-      else if (error.code === 'auth/code-expired') {
-        alert("OTP expired. Please request a new OTP.");
-        setOtpSent(false);
-        setConfirmationResult(null);
-        clearRecaptcha();
-      }
-
-      else {
-        alert(error.message || "OTP verification failed.");
-      }
-
-    } finally {
-      setPhoneLoading(false);
-    }
-  };
-
-  // =========================================================
-  // OPEN PHONE LOGIN
-  // =========================================================
-
-  const openPhoneLogin = () => {
-    setOtpSent(false);
-    setOtp('');
-    setConfirmationResult(null);
-    setPhoneNumber('');
-    setPhoneLoading(false);
-
-    clearRecaptcha();
-
-    setShowPhoneModal(true);
-  };
-
-  // =========================================================
-  // CLOSE PHONE LOGIN
-  // =========================================================
-
-  const closePhoneLogin = () => {
-
-    setShowPhoneModal(false);
-
-    setOtpSent(false);
-    setOtp('');
-    setConfirmationResult(null);
-    setPhoneNumber('');
-    setPhoneLoading(false);
-
-    clearRecaptcha();
-  };
 
   // =========================================================
   // BUY CREDITS
@@ -392,9 +212,9 @@ export default function App() {
         order_id: order.id,
 
         prefill: {
-          name: user?.displayName || user?.phoneNumber || "Aarsh User",
+          name: user?.displayName || "Aarsh User",
           email: user?.email || "",
-          contact: user?.phoneNumber || "9999999999"
+          contact: ""
         },
 
         handler: async function (response) {
@@ -459,97 +279,188 @@ export default function App() {
   // =========================================================
 
   useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
 
-    const unsub = onAuthStateChanged(
-      auth,
-      async (currentUser) => {
+      if (!currentUser) {
+        setProfileReady(false);
+        setShowSetupModal(false);
+        setAuthLoading(false);
+        return;
+      }
 
-        setUser(currentUser);
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const snap = await getDoc(userRef);
 
-        if (currentUser) {
+        if (!snap.exists() || !snap.data()?.username) {
+          // First-time Google user: force username + PIN setup.
+          setPoints(snap.exists() ? (snap.data().credits ?? 0) : 0);
+          setProfileReady(false);
+          setShowSetupModal(true);
+        } else {
+          const data = snap.data();
 
-          const userRef = doc(
-            db,
-            "users",
-            currentUser.uid
+          setPoints(data.credits ?? 0);
+          setProfileReady(true);
+          setShowSetupModal(false);
+
+          await setDoc(
+            userRef,
+            {
+              lastLogin: new Date(),
+              name: currentUser.displayName || data.name || "Aarsh User",
+              email: currentUser.email || data.email || "",
+              photo: currentUser.photoURL || data.photo || ""
+            },
+            { merge: true }
           );
-
-          const snap = await getDoc(userRef);
-
-          if (!snap.exists()) {
-
-            await setDoc(
-              userRef,
-              {
-                name:
-                  currentUser.displayName ||
-                  "Aarsh User",
-
-                email:
-                  currentUser.email || "",
-
-                phone:
-                  currentUser.phoneNumber || "",
-
-                photo:
-                  currentUser.photoURL || "",
-
-                lastLogin: new Date(),
-
-                credits: 0
-              }
-            );
-
-            setPoints(0);
-
-          } else {
-
-            setPoints(
-              snap.data().credits ?? 0
-            );
-
-            await setDoc(
-              userRef,
-              {
-                lastLogin: new Date(),
-
-                phone:
-                  currentUser.phoneNumber ||
-                  snap.data().phone ||
-                  ""
-              },
-              {
-                merge: true
-              }
-            );
-          }
         }
-
+      } catch (error) {
+        console.error("Profile loading error:", error);
+        alert("Unable to load your profile. Please try again.");
+        await signOut(auth);
+      } finally {
         setAuthLoading(false);
       }
-    );
+    });
 
     return () => unsub();
-
   }, []);
 
   // =========================================================
-  // GOOGLE LOGIN
+  // GOOGLE FIRST-TIME LOGIN
   // =========================================================
 
   const handleLogin = async () => {
+    try {
+      setAuthLoading(true);
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error("Google Login Error:", err);
+      setAuthLoading(false);
+      alert(err.message || "Google login failed.");
+    }
+  };
+
+  // =========================================================
+  // FIRST LOGIN: CREATE USERNAME + 4-DIGIT PIN
+  // =========================================================
+
+  const setupProfile = async () => {
+    const username = setupUsername.trim().toLowerCase();
+    const pin = setupPin.trim();
+
+    if (!/^[a-z0-9_]{4,20}$/.test(username)) {
+      alert("Username 4–20 characters ka hona chahiye. Sirf a-z, 0-9 aur _ use karein.");
+      return;
+    }
+
+    if (!/^\d{4}$/.test(pin)) {
+      alert("PIN exactly 4 digits ka hona chahiye.");
+      return;
+    }
+
+    if (!auth.currentUser) {
+      alert("Google session expire ho gaya. Please login again.");
+      return;
+    }
 
     try {
+      setSetupLoading(true);
 
-      await signInWithPopup(
-        auth,
-        googleProvider
-      );
+      const idToken = await auth.currentUser.getIdToken();
 
-    } catch (err) {
+      const res = await fetch(`${BACKEND_URL}/auth/setup-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          idToken,
+          username,
+          pin
+        })
+      });
 
-      alert(err.message);
+      const data = await res.json();
 
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || "Profile setup failed.");
+      }
+
+      // Backend has already created the Firestore profile.
+      // Sign in with the returned custom token so the same auth flow
+      // is ready for the future username/PIN login.
+      if (data.customToken) {
+        await signInWithCustomToken(auth, data.customToken);
+      }
+
+      const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
+      setPoints(snap.exists() ? (snap.data().credits ?? 0) : 0);
+
+      setProfileReady(true);
+      setShowSetupModal(false);
+      setSetupUsername("");
+      setSetupPin("");
+
+      alert(`Account ready! Your username is @${username} 🎉`);
+    } catch (error) {
+      console.error("Profile Setup Error:", error);
+      alert(error.message || "Unable to create your username and PIN.");
+    } finally {
+      setSetupLoading(false);
+    }
+  };
+
+  // =========================================================
+  // RETURNING LOGIN: USERNAME + 4-DIGIT PIN
+  // =========================================================
+
+  const handlePinLogin = async () => {
+    const username = loginUsername.trim().toLowerCase();
+    const pin = loginPin.trim();
+
+    if (!/^[a-z0-9_]{4,20}$/.test(username)) {
+      alert("Please enter a valid username.");
+      return;
+    }
+
+    if (!/^\d{4}$/.test(pin)) {
+      alert("Please enter your 4-digit PIN.");
+      return;
+    }
+
+    try {
+      setLoginLoading(true);
+
+      const res = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username,
+          pin
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success || !data.customToken) {
+        throw new Error(data.message || data.error || "Invalid username or PIN.");
+      }
+
+      await signInWithCustomToken(auth, data.customToken);
+
+      setLoginUsername("");
+      setLoginPin("");
+      setShowPinLogin(false);
+    } catch (error) {
+      console.error("Username PIN Login Error:", error);
+      alert(error.message || "Login failed.");
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -558,15 +469,11 @@ export default function App() {
   // =========================================================
 
   const handleLogout = async () => {
-
     try {
-
+      setProfileReady(false);
       await signOut(auth);
-
     } catch (err) {
-
       alert(err.message);
-
     }
   };
 
@@ -885,7 +792,7 @@ export default function App() {
   // LOGIN PAGE
   // =========================================================
 
-  if (!user) {
+  if (!user || !profileReady) {
 
     return (
       <div className="aarsh-login-page">
@@ -1035,34 +942,30 @@ export default function App() {
 
           </div>
 
-          {/* PHONE LOGIN */}
+          {/* RETURNING USER LOGIN */}
 
           <button
             type="button"
             className="login-phone-btn"
-            onClick={openPhoneLogin}
+            onClick={() => setShowPinLogin(true)}
           >
-
             <span className="phone-icon">
-              📱
+              🔐
             </span>
 
             <span>
-
               <strong>
-                Continue with Phone
+                Login with Username + PIN
               </strong>
 
               <small>
-                Get OTP instantly
+                4-digit PIN • Fast login
               </small>
-
             </span>
 
             <span className="button-arrow">
               →
             </span>
-
           </button>
 
           <div className="login-trust">
@@ -1208,250 +1111,196 @@ export default function App() {
         </div>
 
         {/* =================================================
-            PHONE OTP MODAL
+            FIRST LOGIN: USERNAME + PIN SETUP MODAL
         ================================================= */}
 
-        {showPhoneModal && (
-
+        {showSetupModal && (
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             style={{
-              background:
-                'rgba(15, 23, 42, 0.65)',
-              backdropFilter:
-                'blur(10px)'
-            }}
-            onMouseDown={(e) => {
-
-              if (
-                e.target === e.currentTarget
-              ) {
-                closePhoneLogin();
-              }
-
+              background: "rgba(15, 23, 42, 0.72)",
+              backdropFilter: "blur(10px)"
             }}
           >
+            <div className="relative bg-white w-full max-w-md rounded-[30px] shadow-2xl p-6 md:p-8">
+              <div
+                className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4"
+                style={{
+                  background: "linear-gradient(135deg, #FCE7F3, #EDE9FE)"
+                }}
+              >
+                ✨
+              </div>
 
-            <div
-              className="relative bg-white w-full max-w-md rounded-[30px] shadow-2xl p-6 md:p-8"
-              style={{
-                animation:
-                  'aarshPhoneModalIn 0.25s ease-out'
-              }}
-            >
+              <h2 className="text-2xl md:text-3xl font-black text-center text-gray-900">
+                Create Your Aarsh ID
+              </h2>
 
-              {/* CLOSE BUTTON */}
+              <p className="text-center text-gray-500 text-sm mt-2 mb-6">
+                One-time setup. Next time you can login with your username + 4-digit PIN.
+              </p>
+
+              <label className="block text-sm font-black text-gray-700 mb-2">
+                Choose Username
+              </label>
+
+              <div className="flex items-center border-2 border-purple-100 focus-within:border-purple-500 rounded-2xl overflow-hidden bg-gray-50 mb-4">
+                <span className="px-4 font-black text-purple-600">@</span>
+                <input
+                  type="text"
+                  autoComplete="username"
+                  placeholder="yourname"
+                  maxLength="20"
+                  value={setupUsername}
+                  onChange={(e) =>
+                    setSetupUsername(
+                      e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9_]/g, "")
+                        .slice(0, 20)
+                    )
+                  }
+                  className="flex-1 px-2 py-4 bg-transparent outline-none font-bold"
+                />
+              </div>
+
+              <label className="block text-sm font-black text-gray-700 mb-2">
+                Create 4-Digit PIN
+              </label>
+
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="new-password"
+                placeholder="••••"
+                maxLength="4"
+                value={setupPin}
+                onChange={(e) =>
+                  setSetupPin(
+                    e.target.value.replace(/\D/g, "").slice(0, 4)
+                  )
+                }
+                className="w-full border-2 border-purple-100 focus:border-purple-500 rounded-2xl py-4 px-4 text-center text-3xl font-black tracking-[0.5em] outline-none mb-5"
+              />
 
               <button
                 type="button"
-                onClick={closePhoneLogin}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 text-lg transition-all"
+                onClick={setupProfile}
+                disabled={setupLoading}
+                className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg transition-all disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(135deg, #ec4899, #7c3aed, #2563eb)"
+                }}
+              >
+                {setupLoading ? "⏳ Creating Account..." : "Create My Aarsh ID 🚀"}
+              </button>
+
+              <p className="text-center text-xs text-gray-400 mt-4">
+                🔒 Your PIN is securely hashed on the server.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* =================================================
+            RETURNING USER: USERNAME + PIN LOGIN
+        ================================================= */}
+
+        {showPinLogin && !showSetupModal && (
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            style={{
+              background: "rgba(15, 23, 42, 0.72)",
+              backdropFilter: "blur(10px)"
+            }}
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowPinLogin(false);
+              }
+            }}
+          >
+            <div className="relative bg-white w-full max-w-md rounded-[30px] shadow-2xl p-6 md:p-8">
+              <button
+                type="button"
+                onClick={() => setShowPinLogin(false)}
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 text-lg"
               >
                 ✕
               </button>
 
-              {/* SEND OTP SCREEN */}
+              <div
+                className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4"
+                style={{
+                  background: "linear-gradient(135deg, #DCFCE7, #DBEAFE)"
+                }}
+              >
+                🔐
+              </div>
 
-              {!otpSent ? (
+              <h2 className="text-2xl md:text-3xl font-black text-center text-gray-900">
+                Welcome Back
+              </h2>
 
-                <>
+              <p className="text-center text-gray-500 text-sm mt-2 mb-6">
+                Enter your Aarsh username and 4-digit PIN.
+              </p>
 
-                  <div
-                    className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, #FCE7F3, #EDE9FE)'
-                    }}
-                  >
-                    📱
-                  </div>
+              <input
+                type="text"
+                autoComplete="username"
+                placeholder="Username"
+                value={loginUsername}
+                onChange={(e) =>
+                  setLoginUsername(
+                    e.target.value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9_]/g, "")
+                      .slice(0, 20)
+                  )
+                }
+                className="w-full border-2 border-purple-100 focus:border-purple-500 rounded-2xl py-4 px-4 font-bold outline-none mb-3"
+              />
 
-                  <h2 className="text-2xl md:text-3xl font-black text-center text-gray-900">
-                    Login with Phone
-                  </h2>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="current-password"
+                placeholder="4-digit PIN"
+                maxLength="4"
+                value={loginPin}
+                onChange={(e) =>
+                  setLoginPin(
+                    e.target.value.replace(/\D/g, "").slice(0, 4)
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handlePinLogin();
+                }}
+                className="w-full border-2 border-purple-100 focus:border-purple-500 rounded-2xl py-4 px-4 text-center text-3xl font-black tracking-[0.5em] outline-none mb-5"
+              />
 
-                  <p className="text-center text-gray-500 text-sm mt-2 mb-6">
-                    Enter your mobile number and we'll send you a secure OTP.
-                  </p>
+              <button
+                type="button"
+                onClick={handlePinLogin}
+                disabled={loginLoading}
+                className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(135deg, #ec4899, #7c3aed, #2563eb)"
+                }}
+              >
+                {loginLoading ? "⏳ Checking..." : "Login to Aarsh →"}
+              </button>
 
-                  {/* PHONE NUMBER */}
-
-                  <div className="flex items-center border-2 border-purple-100 focus-within:border-purple-500 rounded-2xl overflow-hidden bg-gray-50 mb-5">
-
-                    <div className="px-4 py-4 font-bold text-gray-700 border-r bg-white">
-                      🇮🇳 +91
-                    </div>
-
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      placeholder="10-digit mobile number"
-                      maxLength="10"
-                      value={phoneNumber}
-                      onChange={(e) =>
-                        setPhoneNumber(
-                          e.target.value
-                            .replace(/\D/g, '')
-                            .slice(0, 10)
-                        )
-                      }
-                      className="flex-1 px-4 py-4 bg-transparent outline-none text-lg font-semibold"
-                    />
-
-                  </div>
-
-                  {/* RECAPTCHA */}
-
-                  <div
-                    id="recaptcha-container"
-                    className="flex justify-center mb-5 overflow-hidden"
-                  ></div>
-
-                  {/* SEND OTP BUTTON */}
-
-                  <button
-                    type="button"
-                    onClick={sendPhoneOTP}
-                    disabled={phoneLoading}
-                    className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, #ec4899, #7c3aed, #2563eb)'
-                    }}
-                  >
-
-                    {phoneLoading
-                      ? "⏳ Sending OTP..."
-                      : "Send OTP →"}
-
-                  </button>
-
-                  <p className="text-center text-xs text-gray-400 mt-4">
-                    🔒 Your phone number is securely handled by Firebase.
-                  </p>
-
-                </>
-
-              ) : (
-
-                /* OTP SCREEN */
-
-                <>
-
-                  <div
-                    className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, #DCFCE7, #DBEAFE)'
-                    }}
-                  >
-                    🔐
-                  </div>
-
-                  <h2 className="text-2xl md:text-3xl font-black text-center text-gray-900">
-                    Enter OTP
-                  </h2>
-
-                  <p className="text-center text-gray-500 text-sm mt-2 mb-6">
-
-                    We've sent a 6-digit OTP to
-                    <br />
-
-                    <strong className="text-purple-700">
-                      +91 {phoneNumber}
-                    </strong>
-
-                  </p>
-
-                  {/* OTP INPUT */}
-
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    placeholder="••••••"
-                    maxLength="6"
-                    value={otp}
-                    autoFocus
-                    onChange={(e) =>
-                      setOtp(
-                        e.target.value
-                          .replace(/\D/g, '')
-                          .slice(0, 6)
-                      )
-                    }
-                    className="w-full border-2 border-purple-100 focus:border-purple-500 rounded-2xl py-4 px-4 text-center text-3xl font-black tracking-[0.5em] outline-none mb-5"
-                  />
-
-                  {/* VERIFY */}
-
-                  <button
-                    type="button"
-                    onClick={verifyPhoneOTP}
-                    disabled={phoneLoading}
-                    className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, #ec4899, #7c3aed, #2563eb)'
-                    }}
-                  >
-
-                    {phoneLoading
-                      ? "⏳ Verifying..."
-                      : "Verify & Login 🚀"}
-
-                  </button>
-
-                  {/* CHANGE NUMBER */}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-
-                      setOtpSent(false);
-                      setOtp('');
-                      setConfirmationResult(null);
-
-                      clearRecaptcha();
-
-                    }}
-                    className="w-full mt-3 py-3 rounded-xl font-bold text-purple-700 hover:bg-purple-50 transition-all"
-                  >
-                    ← Change mobile number
-                  </button>
-
-                  <p className="text-center text-xs text-gray-400 mt-2">
-                    Didn't receive the OTP? You can go back and request again.
-                  </p>
-
-                </>
-
-              )}
-
+              <button
+                type="button"
+                onClick={() => setShowPinLogin(false)}
+                className="w-full mt-3 py-3 rounded-xl font-bold text-purple-700 hover:bg-purple-50"
+              >
+                ← Back to Google Login
+              </button>
             </div>
-
           </div>
-
         )}
-
-        {/* MODAL ANIMATION */}
-
-        <style>
-          {`
-            @keyframes aarshPhoneModalIn {
-              from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.96);
-              }
-
-              to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-              }
-            }
-          `}
-        </style>
 
       </div>
     );
@@ -1525,7 +1374,6 @@ export default function App() {
             <div className="w-8 h-8 rounded-full border-2 border-purple-200 bg-purple-100 flex items-center justify-center font-bold text-purple-700">
               {(
                 user.displayName ||
-                user.phoneNumber ||
                 "A"
               )
                 .charAt(0)
