@@ -780,15 +780,42 @@ def verify_payment():
             "razorpay_signature"
         )
 
-        # Frontend currently sends "points".
-        # Old version used "selectedPoints".
-        selected_points = data.get(
+        if not razorpay_order_id or not razorpay_payment_id or not razorpay_signature:
+            return jsonify({
+                "success": False,
+                "message": "Incomplete Razorpay payment response."
+            }), 400
+
+        # Frontend sends the Firebase UID + selected credit pack.
+        uid = str(data.get("uid", "")).strip()
+        selected_points_raw = data.get(
             "points",
-            data.get(
-                "selectedPoints",
-                100
-            )
+            data.get("selectedPoints", 0)
         )
+
+        if not uid:
+            return jsonify({
+                "success": False,
+                "message": "User UID is required."
+            }), 400
+
+        try:
+            selected_points = int(selected_points_raw)
+        except (TypeError, ValueError):
+            return jsonify({
+                "success": False,
+                "message": "Invalid points value."
+            }), 400
+
+        # Keep the credit-pack input within the packs currently used
+        # by Aarsh. The actual amount/payment is still verified by Razorpay.
+        allowed_points = {30, 100, 200, 500, 1000, 2000}
+
+        if selected_points not in allowed_points:
+            return jsonify({
+                "success": False,
+                "message": "Invalid credit pack."
+            }), 400
 
         msg = (
             f"{razorpay_order_id}|"
@@ -801,18 +828,106 @@ def verify_payment():
             hashlib.sha256
         ).hexdigest()
 
-        if hmac.compare_digest(
+        if not hmac.compare_digest(
             generated_signature,
-            razorpay_signature
+            razorpay_signature or ""
         ):
-
             return jsonify({
-                "success": True,
-                "message": (
-                    "Payment verified successfully"
-                ),
+                "success": False,
+                "message": "Invalid Signature"
+            }), 400
+
+        # -----------------------------------------------------
+        # IMPORTANT:
+        # Credit the user's Firestore balance only AFTER the
+        # Razorpay signature has been verified.
+        #
+        # A payment ID is used as an idempotency key so refreshing
+        # /verify-payment cannot credit the same payment twice.
+        # -----------------------------------------------------
+
+        user_ref = firestore_db.collection("users").document(uid)
+        payment_ref = (
+            firestore_db
+            .collection("razorpay_payments")
+            .document(razorpay_payment_id)
+        )
+
+        transaction = firestore_db.transaction()
+
+        @firestore.transactional
+        def apply_payment(transaction):
+            existing_payment = payment_ref.get(transaction=transaction)
+
+            # Same Razorpay payment was already processed.
+            if existing_payment.exists:
+                payment_data = existing_payment.to_dict() or {}
+                return {
+                    "alreadyProcessed": True,
+                    "newCredits": int(
+                        payment_data.get("newCredits", 0)
+                    ),
+                    "addedPoints": int(
+                        payment_data.get("addedPoints", selected_points)
+                    )
+                }
+
+            user_snapshot = user_ref.get(transaction=transaction)
+
+            if not user_snapshot.exists:
+                raise ValueError("User account not found.")
+
+            user_data = user_snapshot.to_dict() or {}
+
+            try:
+                old_credits = int(user_data.get("credits", 0) or 0)
+            except (TypeError, ValueError):
+                old_credits = 0
+
+            new_credits = old_credits + selected_points
+            now = datetime.now(timezone.utc)
+
+            transaction.set(
+                user_ref,
+                {
+                    "credits": new_credits,
+                    "updatedAt": now
+                },
+                merge=True
+            )
+
+            transaction.set(
+                payment_ref,
+                {
+                    "paymentId": razorpay_payment_id,
+                    "orderId": razorpay_order_id,
+                    "uid": uid,
+                    "addedPoints": selected_points,
+                    "previousCredits": old_credits,
+                    "newCredits": new_credits,
+                    "status": "verified",
+                    "createdAt": now
+                },
+                merge=False
+            )
+
+            return {
+                "alreadyProcessed": False,
+                "newCredits": new_credits,
                 "addedPoints": selected_points
-            })
+            }
+
+        result = apply_payment(transaction)
+
+        return jsonify({
+            "success": True,
+            "message": (
+                "Payment verified and credits updated successfully."
+            ),
+            "addedPoints": result["addedPoints"],
+            "newCredits": result["newCredits"],
+            "alreadyProcessed": result["alreadyProcessed"]
+        })
 
         return jsonify({
             "success": False,
