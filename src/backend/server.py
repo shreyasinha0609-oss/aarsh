@@ -12,6 +12,13 @@ import re
 import json
 from datetime import datetime, timezone
 
+try:
+    import cv2
+    import numpy as np
+except Exception:
+    cv2 = None
+    np = None
+
 # Firebase Admin
 import firebase_admin
 from firebase_admin import credentials, auth, firestore
@@ -211,6 +218,178 @@ def draw_text_with_shadow(
         font=font,
         fill=color
     )
+
+
+# =========================================================
+# TEMPLATE LAYOUT DETECTION
+# =========================================================
+
+def _clamp_box(x, y, w, h, max_w=1067, max_h=1600):
+    x = max(0.0, min(float(x), max_w - 1))
+    y = max(0.0, min(float(y), max_h - 1))
+    w = max(1.0, min(float(w), max_w - x))
+    h = max(1.0, min(float(h), max_h - y))
+    return {"x": x, "y": y, "w": w, "h": h}
+
+
+def _detect_photo_ellipse(image, roi, expected, expected_aspect):
+    if cv2 is None or np is None:
+        return None
+
+    x0, y0, x1, y1 = roi
+    crop = image[y0:y1, x0:x1]
+    if crop.size == 0:
+        return None
+
+    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    edges = cv2.Canny(gray, 40, 120)
+
+    contours, _ = cv2.findContours(
+        edges,
+        cv2.RETR_LIST,
+        cv2.CHAIN_APPROX_NONE
+    )
+
+    best = None
+    ex, ey = expected
+
+    for contour in contours:
+        if len(contour) < 40:
+            continue
+
+        area = cv2.contourArea(contour)
+        if area < 12000:
+            continue
+
+        perimeter = cv2.arcLength(contour, True)
+        if perimeter <= 0:
+            continue
+
+        circularity = 4.0 * 3.141592653589793 * area / (perimeter * perimeter)
+        if circularity < 0.25:
+            continue
+
+        try:
+            (cx, cy), (d1, d2), angle = cv2.fitEllipse(contour)
+        except cv2.error:
+            continue
+
+        major = max(d1, d2)
+        minor = min(d1, d2)
+        if major < 120 or minor < 80:
+            continue
+
+        aspect = major / max(minor, 1.0)
+        if aspect > 1.8:
+            continue
+
+        global_cx = x0 + cx
+        global_cy = y0 + cy
+
+        dist = ((global_cx - ex) ** 2 + (global_cy - ey) ** 2) ** 0.5
+        aspect_penalty = abs(aspect - expected_aspect) * 180
+        size_penalty = abs(major - max(expected[2] if len(expected) > 2 else major, 1)) * 0.15 if len(expected) > 2 else 0
+
+        score = dist + aspect_penalty + size_penalty - min(area / 5000.0, 100.0)
+
+        if best is None or score < best[0]:
+            best = (
+                score,
+                global_cx,
+                global_cy,
+                major,
+                minor,
+                angle
+            )
+
+    if not best:
+        return None
+
+    _, cx, cy, major, minor, angle = best
+    w = major
+    h = minor
+    # fitEllipse returns full axis lengths; keep the calibrated ellipse box.
+    return _clamp_box(cx - w / 2, cy - h / 2, w, h)
+
+
+@app.route("/detect-layout", methods=["POST"])
+def detect_layout():
+    try:
+        data = request.get_json(silent=True) or {}
+        template_url = str(data.get("template_url", "")).strip()
+
+        if not template_url.startswith(
+            "https://res.cloudinary.com/httsesgq/image/upload/"
+        ):
+            return jsonify({
+                "success": False,
+                "message": "Only Aarsh Cloudinary templates are supported."
+            }), 400
+
+        if cv2 is None or np is None:
+            return jsonify({
+                "success": False,
+                "message": "OpenCV is not installed on the backend."
+            }), 500
+
+        response = requests.get(template_url, timeout=20)
+        response.raise_for_status()
+
+        arr = np.frombuffer(response.content, dtype=np.uint8)
+        image = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        if image is None:
+            raise ValueError("Template image could not be decoded.")
+
+        image = cv2.resize(image, (1067, 1600), interpolation=cv2.INTER_AREA)
+
+        leader_expected = (226.0, 439.0)
+        achiever_expected = (900.0, 1268.0)
+
+        leader = _detect_photo_ellipse(
+            image,
+            (0, 120, 500, 760),
+            leader_expected,
+            391.2 / 359.2
+        )
+        achiever = _detect_photo_ellipse(
+            image,
+            (620, 900, 1067, 1530),
+            achiever_expected,
+            304.5 / 247.0
+        )
+
+        # If the detector misses, preserve the locked baseline values.
+        if leader is None:
+            leader = {
+                "x": 46.4,
+                "y": 243.4,
+                "w": 359.2,
+                "h": 391.2
+            }
+
+        if achiever is None:
+            achiever = {
+                "x": 776.5,
+                "y": 1115.75,
+                "w": 247,
+                "h": 304.5
+            }
+
+        return jsonify({
+            "success": True,
+            "photo": {
+                "leaderCircle": leader,
+                "achieverCircle": achiever
+            }
+        })
+
+    except Exception as e:
+        print("LAYOUT DETECTION ERROR:", e)
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
 
 
 # =========================================================
