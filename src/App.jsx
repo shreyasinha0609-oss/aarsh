@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import './App.css';
+import LeaderStyleDemo from './LeaderStyleDemo';
+import CreativeStudio from './creative/CreativeStudio';
 import { auth, googleProvider, db } from './firebase';
 import {
   signInWithPopup,
@@ -9,7 +11,6 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, runTransaction } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
-import { removeBackground } from "@imgly/background-removal";
 
 const BACKEND_URL = "https://aarsh.onrender.com";
 
@@ -21,6 +22,15 @@ const RANKS = [
   "Rank 15: Ambassador","Rank 16: Royal Ambassador","Rank 17: Crown Ambassador",
   "Rank 18: Brand Ambassador"
 ];
+
+const PROFILE_LANGUAGE_OPTIONS = [
+  "English", "Hindi", "Bengali", "Telugu", "Marathi", "Tamil", "Gujarati",
+  "Kannada", "Malayalam", "Punjabi", "Odia", "Assamese", "Urdu", "Sanskrit"
+];
+
+const PROFILE_TITLE_OPTIONS = ["Mr.", "Mrs.", "Miss.", "Dr."];
+const PROFILE_GENDER_OPTIONS = ["Male", "Female"];
+const PROFILE_MARRIED_OPTIONS = ["Yes", "No"];
 
 const CLOUD_NAME = "httsesgq";
 const CLOUDINARY_BASE = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`;
@@ -42,6 +52,10 @@ const templateColors = {
   5: "#DB2777"
 };
 
+const CUSTOMER_FONT_OPTIONS = [
+  ['Frasa Display', "'FrasaDisplay-Bold', Arial, sans-serif"], ['Garat', "'Garat', Arial, sans-serif"], ['ALICE', "'ALICE', Georgia, serif"], ['Canva Sans', "'CanvaSans', Arial, sans-serif"], ['Poppins', "'Poppins', Arial, sans-serif"], ['Montserrat', "'Montserrat', Arial, sans-serif"], ['Bebas Neue', "'Bebas Neue', Impact, sans-serif"], ['Oswald', "'Oswald', Arial Narrow, sans-serif"], ['Roboto', "'Roboto', Arial, sans-serif"], ['Lato', "'Lato', Arial, sans-serif"], ['Raleway', "'Raleway', Arial, sans-serif"], ['Playfair Display', "'Playfair Display', Georgia, serif"], ['Cinzel', "'Cinzel', Georgia, serif"], ['Anton', "'Anton', Impact, sans-serif"], ['Archivo Black', "'Archivo Black', Arial Black, sans-serif"], ['Libre Baskerville', "'Libre Baskerville', Georgia, serif"], ['Merriweather', "'Merriweather', Georgia, serif"], ['League Spartan', "'League Spartan', Arial Black, sans-serif"], ['Abril Fatface', "'Abril Fatface', Georgia, serif"], ['DM Serif Display', "'DM Serif Display', Georgia, serif"]
+];
+
 const STEP1_TEMPLATE_ICONS = [
   '🏆','🛡️','🏅','👑','🌿','⭐','💎','🌾','🔥','🎯','🪷','☀️','🦋','✷','🔷'
 ];
@@ -56,6 +70,42 @@ const RECHARGE_OPTIONS = [
   { points: 500, price: 500 },
   { points: 1000, price: 1000 },
   { points: 2000, price: 2000 },
+];
+
+const REFERENCE_CANVAS = { w: 1600, h: 1600 };
+const RANK_INCOME = {
+  Bronze: '₹2,500', Silver: '₹7,500', Gold: '₹15,000', Platinum: '₹32,000',
+  Emerald: '₹69,000', Topaz: '₹2,30,000', 'Ruby Star': '₹3,50,000', Sapphire: '₹6,00,000',
+  'Star Sapphire': '₹13,00,000', Diamond: '₹22,00,000', 'Blue Diamond': '₹41,20,000',
+  'Black Diamond': '₹73,40,000', 'Royal Diamond': '₹1,35,80,000', 'Crown Diamond': '₹2,66,00,000',
+  Ambassador: '₹4,57,20,000', 'Royal Ambassador': '₹8,99,40,000',
+  'Crown Ambassador': '₹17,78,80,000', 'Brand Ambassador': '₹36,57,60,000'
+};
+const BANNER_STORAGE_KEY = 'aarsh-creative-banner-settings-v1';
+const REFERENCE_COORDS = {
+  congratulations:{x:74.3,y:135.6,w:842.5,h:106,size:66.5},
+  brandNew:{x:326.8,y:255.1,w:368.6,h:29.3,size:18.4},
+  leader:{x:99.3,y:298.4,w:700.7,h:106,size:66.5},
+  leaderName:{x:137.6,y:418.4,w:578,h:87.4,size:54.9},
+  leaderCity:{x:309,y:517.2,w:222.3,h:33.6,size:21.1},
+  achieved:{x:197.3,y:592,w:504.8,h:76.3,size:47.9},
+  rank:{x:46.6,y:709.3,w:898,h:135.8,size:85.2},
+  dsRank:{x:246.2,y:860.4,w:470.4,h:95.7,size:60.1},
+  incomeLabel:{x:937.3,y:1079.2,w:558.1,h:65.8,size:41.3},
+  amount:{x:725.3,y:1180.9,w:828.8,h:227.1,size:143},
+  achieverName:{x:495.6,y:1461.5,w:614.8,h:64.1,size:40.2},
+  achieverRank:{x:618.1,y:1531,w:415,h:43.3,size:27.2},
+  success:{x:1269.2,y:1479.7,w:290.8,h:33.6,size:21.2},
+  phone:{x:1277.7,y:1514.5,w:259.3,h:38.9,size:24.4},
+  leaderPhoto:{x:869.9,y:255.1,w:698.6,h:827.5},
+  achieverPhoto:{x:0,y:1002.4,w:449.7,h:532.6},
+  asclepias:{x:13.9,y:11.3,w:165.8,h:54},
+  fighterLogo:{x:820.9,y:23.5,w:128.1,h:48.4},
+  fighterText:{x:953.5,y:25.4,w:98.8,h:46.5}
+};
+const REFERENCE_MEMBER_PHOTOS = [
+  [188.4,19.4],[246.1,19.4],[303.5,19.4],[360.9,19.4],[418.4,19.4],[475.4,19.4],[532.4,19.4],[589.4,19.4],[646.2,19.4],[703.4,19.4],[760.6,19.4],
+  [186.8,90.6],[244.4,90.6],[301.9,90.6],[359.3,90.6],[416.7,90.6],[473.7,90.6],[530.7,90.6],[587.7,90.6],[644.5,90.6],[701.7,90.6],[758.9,90.6]
 ];
 
 const getRankSlug = (rankStr) => {
@@ -87,7 +137,7 @@ const EXACT_COORDS = {
     y: 560.4,
     w: 372.2,
     h: 42.8,
-    size: 23,
+    size: 15,
     font: "'FrasaDisplay-Bold', Arial, sans-serif"
   },
 
@@ -96,7 +146,7 @@ const EXACT_COORDS = {
     y: 640.4,
     w: 359.2,
     h: 42.8,
-    size: 27,
+    size: 14,
     font: "'Garat', Arial, sans-serif"
   },
 
@@ -112,7 +162,7 @@ const EXACT_COORDS = {
     y: 1285,
     w: 379,
     h: 42.8,
-    size: 24,
+    size: 15,
     font: "'FrasaDisplay-Bold', Arial, sans-serif"
   },
 
@@ -121,7 +171,7 @@ const EXACT_COORDS = {
     y: 1330,
     w: 359.2,
     h: 35.9,
-    size: 11,
+    size: 13,
     font: "'FrasaDisplay-Bold', Arial, sans-serif"
   },
 
@@ -130,7 +180,7 @@ const EXACT_COORDS = {
     y: 1445.4,
     w: 205.6,
     h: 29.9,
-    size: 11,
+    size: 12,
     font: "'ALICE', Arial, sans-serif"
   }
 };
@@ -196,18 +246,27 @@ const loadCalibration = (rankName, templateNo) => {
       localStorage.getItem(staticStandaloneKey);
     if (!raw) return cloneLayout(templateNo);
     const saved = JSON.parse(raw);
-    return {
-      ...cloneLayout(templateNo),
+    const base = cloneLayout(templateNo);
+    const merged = {
+      ...base,
       ...saved,
-      photo: {
-        ...cloneLayout(templateNo).photo,
-        ...(saved.photo || {})
-      },
-      text: {
-        ...cloneLayout(templateNo).text,
-        ...(saved.text || {})
-      }
+      photo: { ...base.photo, ...(saved.photo || {}) },
+      text: { ...base.text, ...(saved.text || {}) }
     };
+    const fixedSizes = {
+      leaderNameBox: 23,
+      leaderCityBox: 22,
+      achieverNameBox: 20,
+      achieverRankBox: 13,
+      phoneBox: 14
+    };
+    Object.entries(fixedSizes).forEach(([key, min]) => {
+      const box = merged.text[key] || {};
+      const current = Number(box.style?.fontSize ?? box.size ?? min);
+      const size = min;
+      merged.text[key] = { ...box, size, style: { ...(box.style || {}), fontSize: size } };
+    });
+    return merged;
   } catch {
     return cloneLayout(templateNo);
   }
@@ -342,7 +401,7 @@ const CalibrationOverlay = ({ layout, onChange, visible }) => {
   );
 };
 
-const PhotoStylePicker = ({ selected, onSelect, disabled, bgReady, role }) => (
+const PhotoStylePicker = ({ selected, onSelect, onRemoveBackground, bgReady, bgLoading, role }) => (
   <div className="aarsh-photo-style-picker mt-3 mb-5">
     <div className="aarsh-photo-style-head">
       <div>
@@ -351,29 +410,28 @@ const PhotoStylePicker = ({ selected, onSelect, disabled, bgReady, role }) => (
       </div>
       <span>2 OPTIONS</span>
     </div>
-
     <div className="aarsh-photo-style-grid aarshtwo-option-grid">
       {PHOTO_STYLE_OPTIONS.map((option) => {
-        const isDisabled = disabled || (option.id === 2 && !bgReady);
+        const isCutout = option.id === 2;
+        const isDisabled = isCutout && bgLoading;
         return (
           <button
             key={option.id}
             type="button"
             disabled={isDisabled}
-            onClick={() => onSelect(option.id)}
+            onClick={() => isCutout ? onRemoveBackground() : onSelect(1)}
             className={`aarsh-photo-style-option ${selected === option.id ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`}
           >
             <span className="aarsh-photo-style-number">{option.short}</span>
-            <span className={`aarsh-photo-style-icon ${option.id === 1 ? 'is-original' : 'is-cutout'}`}>
-              {option.id === 1 ? '🖼️' : '✂️'}
-            </span>
-            <span className="aarsh-photo-style-label">{option.label}</span>
+            <span className={`aarsh-photo-style-icon ${option.id === 1 ? 'is-original' : 'is-cutout'}`}>{option.id === 1 ? '🖼️' : '✂️'}</span>
+            <span className="aarsh-photo-style-label">{isCutout && bgLoading ? 'Removing Background…' : option.label}</span>
             {selected === option.id && <span className="aarsh-photo-style-check">✓</span>}
           </button>
         );
       })}
     </div>
-    {!bgReady && <div className="aarsh-photo-style-loading">AI background removal is preparing… Original Photo remains available immediately.</div>}
+    {!bgReady && !bgLoading && <div className="aarsh-photo-style-loading">Original photo is ready. Choose <b>Remove BG</b> only if you want the background removed.</div>}
+    {bgLoading && <div className="aarsh-photo-style-loading">Removing background… the editor stays available while it processes.</div>}
   </div>
 );
 
@@ -386,11 +444,14 @@ function AarshApp() {
   const [rank, setRank] = useState(RANKS[0]);
   const [tpl, setTpl] = useState(1);
   const [themeColor, setThemeColor] = useState(templateColors[1]);
+  const [referencePosterMode, setReferencePosterMode] = useState(false);
+  const [referenceBannerSettings, setReferenceBannerSettings] = useState({ asclepiasLogo:'', people:[], fighterLogo:'', fighterStudio:'' });
 
   // USERNAME + 4-DIGIT PIN AUTH
   const [profileReady, setProfileReady] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showPinLogin, setShowPinLogin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [setupUsername, setSetupUsername] = useState('');
   const [setupPin, setSetupPin] = useState('');
@@ -409,6 +470,7 @@ function AarshApp() {
   const [lPhoto, setLPhoto] = useState(null);
   const [lPhotoLoading, setLPhotoLoading] = useState(false);
   const [lRemovedPhoto, setLRemovedPhoto] = useState(null);
+  const [lPhotoFile, setLPhotoFile] = useState(null);
   const [lStyle, setLStyle] = useState(1);
 
   const [aPre, setAPre] = useState('Mr.');
@@ -422,6 +484,7 @@ function AarshApp() {
   const [aPhoto, setAPhoto] = useState(null);
   const [aPhotoLoading, setAPhotoLoading] = useState(false);
   const [aRemovedPhoto, setARemovedPhoto] = useState(null);
+  const [aPhotoFile, setAPhotoFile] = useState(null);
   const [aStyle, setAStyle] = useState(1);
   const [aTextColor, setATextColor] = useState('#ffffff');
 
@@ -447,6 +510,7 @@ function AarshApp() {
   // Dashboard / editor navigation
   const [appView, setAppView] = useState("dashboard");
   const [openMenu, setOpenMenu] = useState(null);
+  const [creativeSettingsRequested, setCreativeSettingsRequested] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [liveChatOpen, setLiveChatOpen] = useState(false);
@@ -454,9 +518,15 @@ function AarshApp() {
     { from: "support", text: "Hi! Welcome to Aarsh Digital Support. How can we help you today?" }
   ]);
   const [liveChatText, setLiveChatText] = useState("");
-  const [profileForm, setProfileForm] = useState({ name: "", username: "", email: "", photo: "", pin: "" });
+  const [profileForm, setProfileForm] = useState({
+    name: "", username: "", email: "", photo: "", pin: "",
+    title: "Mr.", firstName: "", lastName: "", mobile: "+91 ", whatsapp: "+91 ",
+    role: RANKS[0], language: "English", gender: "Male", married: "No", profileImages: []
+  });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profilePhotoInput, setProfilePhotoInput] = useState(null);
+  const [profileBgRemoving, setProfileBgRemoving] = useState(false);
+  const [profileBgProgress, setProfileBgProgress] = useState({ done: 0, total: 0 });
   const [faqOpen, setFaqOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
 
@@ -468,6 +538,20 @@ function AarshApp() {
   };
 
   const posterRef = useRef(null);
+  const [posterPreviewWidth, setPosterPreviewWidth] = useState(1067);
+
+  useEffect(() => {
+    const node = posterRef.current;
+    if (!node || typeof ResizeObserver === 'undefined') return;
+    const update = () => {
+      const width = Math.round(node.getBoundingClientRect().width);
+      if (width > 0) setPosterPreviewWidth(width);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [step]);
 
   const FAQ_ITEMS = [
     ["How many points are required to create a poster?", "Every successful poster render uses 5 points."],
@@ -504,60 +588,169 @@ function AarshApp() {
     reader.readAsDataURL(file);
   });
 
-  const openProfileEditor = () => {
-    setProfileForm({
-      name: user?.displayName || "",
-      username: "",
-      email: user?.email || "",
-      photo: user?.photoURL || "",
-      pin: ""
-    });
-    getDoc(doc(db, "users", user.uid)).then(snap => {
+  const openProfileEditor = async () => {
+    if (!user?.uid) return;
+    setOpenMenu(null);
+    setAppView("profile");
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
       const d = snap.data() || {};
-      setProfileForm(prev => ({ ...prev, name: d.name || prev.name, username: d.username || prev.username, email: d.email || prev.email, photo: d.photo || prev.photo }));
-    }).catch(console.error);
-    setOpenMenu("profileEditor");
+      const fullName = d.name || user?.displayName || "";
+      const storedFirst = d.firstName || fullName.split(" ").slice(0, -1).join(" ") || fullName;
+      const storedLast = d.lastName || (fullName.split(" ").length > 1 ? fullName.split(" ").slice(-1)[0] : "");
+      const localImages = (() => {
+        try { return JSON.parse(localStorage.getItem(`aarsh-profile-images-${user.uid}`) || "[]"); } catch { return []; }
+      })();
+      setProfileForm({
+        name: fullName, username: d.username || "", email: d.email || user?.email || "", photo: d.photo || user?.photoURL || "", pin: "",
+        title: d.title || "Mr.", firstName: storedFirst, lastName: storedLast,
+        mobile: d.mobile || "+91 ", whatsapp: d.whatsapp || "+91 ", role: d.role || RANKS[0],
+        language: d.language || "English", gender: d.gender || "Male", married: d.married || "No",
+        profileImages: Array.isArray(d.profileImages) && d.profileImages.length ? d.profileImages.slice(0, 15) : localImages.slice(0, 15)
+      });
+    } catch (e) {
+      console.error("Profile loading error:", e);
+    }
   };
+
+  // Profile gallery images are automatically cut out using the same high-quality
+  // @imgly/background-removal engine used by the poster editor. We keep alpha
+  // transparency and export a compact WebP so the subject can be placed cleanly
+  // on future Aarsh creatives without carrying the original background.
+  const removeProfileImageBackground = async (file) => {
+    if (!file) return "";
+    const { removeBackground } = await import("@imgly/background-removal");
+    const cutoutBlob = await removeBackground(file, {
+      output: { format: "image/png" }
+    });
+
+    return await new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(cutoutBlob);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxSide = 700;
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          // WebP keeps transparency and is substantially smaller than PNG.
+          const webp = canvas.toDataURL("image/webp", 0.88);
+          resolve(webp);
+        } catch (error) {
+          reject(error);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      };
+      img.onerror = (error) => { URL.revokeObjectURL(url); reject(error); };
+      img.src = url;
+    });
+  };
+
+  const addProfileImages = async (files) => {
+    const incoming = Array.from(files || []).slice(0, Math.max(0, 15 - profileForm.profileImages.length));
+    if (!incoming.length || profileBgRemoving) return;
+
+    setProfileBgRemoving(true);
+    setProfileBgProgress({ done: 0, total: incoming.length });
+    try {
+      const processed = [];
+      for (const file of incoming) {
+        try {
+          // Sequential processing keeps browser RAM/GPU usage stable for up to 15 images.
+          const cutout = await removeProfileImageBackground(file);
+          if (cutout) processed.push(cutout);
+        } catch (error) {
+          console.error("Profile image background removal failed:", error);
+          // If one image fails, keep that image available instead of losing the upload.
+          try {
+            const fallback = await compressProfileGalleryImage(file);
+            if (fallback) processed.push(fallback);
+          } catch (fallbackError) {
+            console.error("Profile image fallback compression failed:", fallbackError);
+          }
+        } finally {
+          setProfileBgProgress(prev => ({ ...prev, done: Math.min(prev.done + 1, prev.total) }));
+        }
+      }
+
+      setProfileForm(prev => ({
+        ...prev,
+        profileImages: [...prev.profileImages, ...processed].slice(0, 15)
+      }));
+    } catch (e) {
+      console.error(e);
+      alert("Image upload/background removal failed. Please try another image.");
+    } finally {
+      setProfileBgRemoving(false);
+      setTimeout(() => setProfileBgProgress({ done: 0, total: 0 }), 500);
+    }
+  };
+
+  const removeProfileImage = (index) => {
+    setProfileForm(prev => ({ ...prev, profileImages: prev.profileImages.filter((_, i) => i !== index) }));
+  };
+
 
   const saveProfile = async () => {
     if (!user?.uid) return;
-    if (!profileForm.name.trim() || !profileForm.username.trim() || !profileForm.email.trim()) {
-      alert("Name, username and email are required.");
-      return;
-    }
-    if (profileForm.pin && !/^\d{4}$/.test(profileForm.pin)) {
-      alert("PIN exactly 4 digits ka hona chahiye.");
-      return;
-    }
+    const firstName = profileForm.firstName.trim();
+    const lastName = profileForm.lastName.trim();
+    if (!firstName || !lastName) { alert("First Name and Last Name are required."); return; }
+    if (!profileForm.username.trim() || !profileForm.email.trim()) { alert("Your existing username/email are required for account security."); return; }
+    if (profileForm.pin && !/^\d{4}$/.test(profileForm.pin)) { alert("PIN exactly 4 digits ka hona chahiye."); return; }
+    const fullName = `${firstName} ${lastName}`.trim();
     try {
       setProfileSaving(true);
-      const idToken = await user.getIdToken(true);
-      const res = await fetch(`${BACKEND_URL}/auth/update-profile`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          idToken,
-          name: profileForm.name.trim(),
-          username: profileForm.username.trim().toLowerCase(),
-          email: profileForm.email.trim().toLowerCase(),
-          photo: profileForm.photo || "",
-          pin: profileForm.pin || undefined
-        })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || "Profile update failed.");
+      // Save the profile directly to Firestore first so Personal Details
+      // continues to work even when the optional Render backend is asleep,
+      // temporarily unavailable, or unreachable from localhost.
+      const extra = {
+        title: profileForm.title, firstName, lastName, mobile: profileForm.mobile.trim(),
+        whatsapp: profileForm.whatsapp.trim(), role: profileForm.role, language: profileForm.language,
+        gender: profileForm.gender, married: profileForm.married, profileImages: profileForm.profileImages.slice(0, 15),
+        name: fullName, photo: profileForm.photo || "", updatedAt: new Date()
+      };
+      await updateDoc(doc(db, "users", user.uid), extra);
+      try { localStorage.setItem(`aarsh-profile-images-${user.uid}`, JSON.stringify(profileForm.profileImages.slice(0, 15))); } catch {}
+
+      // Keep the existing backend sync when it is available. A backend/network
+      // failure must not make an otherwise successful Personal Details save fail.
+      try {
+        const idToken = await user.getIdToken(true);
+        const res = await fetch(`${BACKEND_URL}/auth/update-profile`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idToken,
+            name: fullName,
+            username: profileForm.username.trim().toLowerCase(),
+            email: profileForm.email.trim().toLowerCase(),
+            photo: profileForm.photo || "",
+            pin: profileForm.pin || undefined
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          console.warn("Optional backend profile sync failed:", data.message || res.status);
+        }
+      } catch (backendError) {
+        console.warn("Optional backend profile sync unavailable; Firestore save succeeded.", backendError);
+      }
+
       await user.reload();
       setUser(auth.currentUser);
-      setOpenMenu(null);
-      setProfileForm(prev => ({ ...prev, pin: "" }));
+      setProfileForm(prev => ({ ...prev, name: fullName, pin: "" }));
       await addNotification({ title: "Profile Updated", message: "Your Aarsh Digital profile details were updated successfully.", type: "info" });
       alert("Profile updated successfully ✅");
     } catch (error) {
       console.error("Profile update error:", error);
       alert(error.message || "Profile update failed.");
-    } finally {
-      setProfileSaving(false);
-    }
+    } finally { setProfileSaving(false); }
   };
 
   const sendLiveChat = () => {
@@ -731,13 +924,84 @@ function AarshApp() {
   };
 
   // =========================================================
+  // CREATIVE STUDIO -> REFERENCE POSTER HANDOFF
+  // =========================================================
+  useEffect(() => {
+    const onTemplateSelected = (event) => {
+      const detail = event?.detail || {};
+      const selectedRank = detail.rank || RANKS[0];
+      const selectedTemplate = Number(detail.template) || 1;
+      let banner = { asclepiasLogo:'', people:[], fighterLogo:'', fighterStudio:'' };
+      try {
+        const raw = localStorage.getItem(BANNER_STORAGE_KEY);
+        if (raw) banner = { ...banner, ...JSON.parse(raw) };
+      } catch {}
+
+      setRank(selectedRank);
+      setTpl(selectedTemplate);
+      setReferencePosterMode(true);
+      setReferenceBannerSettings(banner);
+      setAppView('dashboard');
+      setStep(2);
+      setStep1Zoom(1);
+
+      // Bottom achiever data is sourced from My Profile as requested.
+      const profileName = profileForm.firstName || profileForm.name || '';
+      const parts = profileName.trim().split(/\s+/).filter(Boolean);
+      setAPre(profileForm.title || 'Mr.');
+      setAF(profileForm.firstName || parts.slice(0, -1).join(' ') || parts[0] || '');
+      setAL(profileForm.lastName || (parts.length > 1 ? parts[parts.length - 1] : ''));
+      setARank(selectedRank);
+      setAPh((profileForm.mobile || '').replace(/^\+91\s*/, '').trim());
+      setAStyle(2);
+      if (profileForm.photo) setAPhoto(profileForm.photo);
+      else if (Array.isArray(profileForm.profileImages) && profileForm.profileImages[0]) setAPhoto(profileForm.profileImages[0]);
+      else setAPhoto(null);
+      setErrors({});
+    };
+
+    window.addEventListener('aarsh-rank-template-selected', onTemplateSelected);
+    return () => window.removeEventListener('aarsh-rank-template-selected', onTemplateSelected);
+  }, [profileForm]);
+
+  // =========================================================
   // FIREBASE AUTH STATE
   // =========================================================
 
   useEffect(() => {
-    setLayoutConfig(loadCalibration(rank, tpl));
+    setLayoutConfig(normalizeCustomerLayout(loadCalibration(rank, tpl)));
     setCalibrationStatus("");
   }, [rank, tpl]);
+
+  // Keep the left Step 2/3 editor shell exactly as tall as the live-preview
+  // card. The editor itself remains internally scrollable when its content
+  // is taller. ResizeObserver also keeps the alignment correct when browser
+  // zoom/viewport size changes or the preview image finishes loading.
+  useEffect(() => {
+    if (step !== 2 && step !== 3) return;
+
+    const grid = document.querySelector('.aarsh-main-grid:not(.aarsh-step1-grid)');
+    if (!grid) return;
+
+    const editor = grid.children[0];
+    const preview = grid.children[1];
+    if (!editor || !preview) return;
+
+    const syncEditorHeight = () => {
+      const height = Math.round(preview.getBoundingClientRect().height);
+      if (height > 0) editor.style.setProperty('--aarsh-synced-preview-height', `${height}px`);
+    };
+
+    syncEditorHeight();
+    const observer = new ResizeObserver(syncEditorHeight);
+    observer.observe(preview);
+    window.addEventListener('resize', syncEditorHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncEditorHeight);
+    };
+  }, [step, tpl, rank, step1Zoom]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
@@ -769,12 +1033,17 @@ function AarshApp() {
           setNotifications(loadedNotifications);
           setUnreadCount(loadedNotifications.filter(n => !n.read).length);
           setTransactions(Array.isArray(data.transactions) ? data.transactions.slice().reverse() : []);
+          let localProfileImages = [];
+          try { localProfileImages = JSON.parse(localStorage.getItem(`aarsh-profile-images-${currentUser.uid}`) || "[]"); } catch {}
+          const fullName = data.name || currentUser.displayName || "";
           setProfileForm({
-            name: data.name || currentUser.displayName || "",
-            username: data.username || "",
-            email: data.email || currentUser.email || "",
-            photo: data.photo || currentUser.photoURL || "",
-            pin: ""
+            name: fullName, username: data.username || "", email: data.email || currentUser.email || "",
+            photo: data.photo || currentUser.photoURL || "", pin: "", title: data.title || "Mr.",
+            firstName: data.firstName || fullName.split(" ").slice(0, -1).join(" ") || fullName,
+            lastName: data.lastName || (fullName.split(" ").length > 1 ? fullName.split(" ").slice(-1)[0] : ""),
+            mobile: data.mobile || "+91 ", whatsapp: data.whatsapp || "+91 ", role: data.role || RANKS[0],
+            language: data.language || "English", gender: data.gender || "Male", married: data.married || "No",
+            profileImages: Array.isArray(data.profileImages) && data.profileImages.length ? data.profileImages.slice(0,15) : localProfileImages.slice(0,15)
           });
           setProfileReady(true);
           setShowSetupModal(false);
@@ -955,38 +1224,49 @@ function AarshApp() {
   // PHOTO HANDLERS
   // =========================================================
 
-  const processUploadedPhoto = async (file, setPhoto, setRemovedPhoto, setLoading, errorKey) => {
+  const onLeaderPhoto = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setLPhoto(createObjectUrl(f));
+    setLPhotoFile(f);
+    setLRemovedPhoto(null);
+    setLStyle(1);
+    setLPhotoLoading(false);
+    setErrors(p => ({ ...p, lPhoto: false }));
+    e.target.value = '';
+  };
+
+  const onAchieverPhoto = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setAPhoto(createObjectUrl(f));
+    setAPhotoFile(f);
+    setARemovedPhoto(null);
+    setAStyle(1);
+    setAPhotoLoading(false);
+    setErrors(p => ({ ...p, aPhoto: false }));
+    e.target.value = '';
+  };
+
+  const removePhotoBackground = async (file, setRemovedPhoto, setLoading, setStyle) => {
     if (!file) return;
-
-    const originalUrl = createObjectUrl(file);
-    setPhoto(originalUrl);
-    setRemovedPhoto(null);
     setLoading(true);
-    setErrors(p => ({ ...p, [errorKey]: false }));
-
     try {
-      const cutoutBlob = await removeBackground(file);
-      const cutoutUrl = createObjectUrl(cutoutBlob);
-      setRemovedPhoto(cutoutUrl);
+      const { removeBackground } = await import('@imgly/background-removal');
+      const cutoutBlob = await removeBackground(file, { output: { format: 'image/png' } });
+      setRemovedPhoto(createObjectUrl(cutoutBlob));
+      setStyle(2);
     } catch (error) {
-      console.error("Background removal error:", error);
-      alert("AI background remove nahi ho paya. Same Photo option phir bhi available rahega.");
+      console.error('Background removal error:', error);
+      alert('Background remove nahi ho paya. Original photo available rahegi.');
+      setStyle(1);
     } finally {
       setLoading(false);
     }
   };
 
-  const onLeaderPhoto = async (e) => {
-    const f = e.target.files[0];
-    await processUploadedPhoto(f, setLPhoto, setLRemovedPhoto, setLPhotoLoading, "lPhoto");
-    e.target.value = "";
-  };
-
-  const onAchieverPhoto = async (e) => {
-    const f = e.target.files[0];
-    await processUploadedPhoto(f, setAPhoto, setARemovedPhoto, setAPhotoLoading, "aPhoto");
-    e.target.value = "";
-  };
+  const removeLeaderBackground = () => removePhotoBackground(lPhotoFile, setLRemovedPhoto, setLPhotoLoading, setLStyle);
+  const removeAchieverBackground = () => removePhotoBackground(aPhotoFile, setARemovedPhoto, setAPhotoLoading, setAStyle);
 
   // =========================================================
   // TEMPLATE CALIBRATION
@@ -1060,52 +1340,192 @@ function AarshApp() {
   // =========================================================
 
   const handleTemplate = (t) => {
+  setTpl(t);
 
-    setTpl(t);
+  const fallbackColors = [
+    '#6D28D9',
+    '#059669',
+    '#2563EB',
+    '#EA580C',
+    '#DB2777'
+  ];
 
-    setThemeColor(
-      templateColors[t]
-    );
-  };
+  setThemeColor(
+    templateColors[t] ||
+    fallbackColors[(t - 1) % fallbackColors.length]
+  );
+};
 
   // =========================================================
   // VALIDATION
   // =========================================================
 
-  const validateStep2 = () => {
-
+  const validateLeader = () => {
     const newErrors = {};
-
-    if (!lF.trim())
-      newErrors.lF = true;
-
-    if (!lL.trim())
-      newErrors.lL = true;
-
-    if (!lCity.trim())
-      newErrors.lCity = true;
-
-    if (!lPhoto)
-      newErrors.lPhoto = true;
-
-    if (!aF.trim())
-      newErrors.aF = true;
-
-    if (!aL.trim())
-      newErrors.aL = true;
-
-    if (!aPh.trim())
-      newErrors.aPh = true;
-
-    if (aRank === 'Other' && !aRankOther.trim())
-      newErrors.aRankOther = true;
-
-    if (!aPhoto)
-      newErrors.aPhoto = true;
-
+    if (!lF.trim()) newErrors.lF = true;
+    if (!lL.trim()) newErrors.lL = true;
+    if (!lCity.trim()) newErrors.lCity = true;
+    if (!lPhoto) newErrors.lPhoto = true;
     setErrors(newErrors);
-
     return Object.keys(newErrors).length === 0;
+  };
+
+  const validateAchiever = () => {
+    const newErrors = {};
+    if (!aF.trim()) newErrors.aF = true;
+    if (!aL.trim()) newErrors.aL = true;
+    if (!aPh.trim()) newErrors.aPh = true;
+    if (aRank === 'Other' && !aRankOther.trim()) newErrors.aRankOther = true;
+    if (!aPhoto) newErrors.aPhoto = true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = validateLeader;
+
+  // Customer-facing Step 2/3 controls. These modify only the current poster
+  // layout in memory; the saved master calibration is never overwritten.
+  const adjustTextPosition = (key, axis, delta) => {
+    setLayoutConfig(prev => ({
+      ...prev,
+      text: {
+        ...prev.text,
+        [key]: {
+          ...prev.text[key],
+          [axis]: Math.round(Number(prev.text[key]?.[axis] || 0) + delta)
+        }
+      }
+    }));
+  };
+
+  const adjustPhotoPosition = (key, axis, delta) => {
+    setLayoutConfig(prev => ({
+      ...prev,
+      photo: {
+        ...prev.photo,
+        [key]: {
+          ...prev.photo[key],
+          [axis]: Math.round(Number(prev.photo[key]?.[axis] || 0) + delta)
+        }
+      }
+    }));
+  };
+
+  const adjustPairedTextSize = (firstKey, secondKey, delta, minFirst, minSecond) => {
+    setLayoutConfig(prev => {
+      const first = prev.text[firstKey] || {};
+      const second = prev.text[secondKey] || {};
+      const current = Number(first.style?.fontSize ?? first.size ?? minFirst);
+      const next = Math.max(minFirst, Math.round(current + delta));
+      const secondNext = Math.max(minSecond, next - 1);
+      return {
+        ...prev,
+        text: {
+          ...prev.text,
+          [firstKey]: { ...first, size: next, style: { ...(first.style || {}), fontSize: next } },
+          [secondKey]: { ...second, size: secondNext, style: { ...(second.style || {}), fontSize: secondNext } }
+        }
+      };
+    });
+  };
+
+  const setTextSize = (key, value, min) => {
+    const size = Math.max(min, Math.round(Number(value) || min));
+    setLayoutConfig(prev => ({
+      ...prev,
+      text: {
+        ...prev.text,
+        [key]: {
+          ...prev.text[key],
+          size,
+          style: { ...(prev.text[key]?.style || {}), fontSize: size }
+        }
+      }
+    }));
+  };
+
+  const adjustAchieverTextSize = (key, delta, minSize = 1, maxSize = 100) => {
+    setLayoutConfig(prev => {
+      const box = prev.text?.[key] || {};
+      const current = Number(box.style?.fontSize ?? box.size ?? minSize);
+      const next = Math.min(maxSize, Math.max(minSize, Math.round(current + delta)));
+      return {
+        ...prev,
+        text: {
+          ...prev.text,
+          [key]: {
+            ...box,
+            size: next,
+            style: { ...(box.style || {}), fontSize: next }
+          }
+        }
+      };
+    });
+  };
+
+  const patchCustomerTextStyle = (key, patch) => {
+    setLayoutConfig(prev => {
+      const box = prev.text[key] || {};
+      const style = { ...(box.style || {}), ...patch };
+      const nextBox = { ...box, font: style.font || box.font, style };
+      if (patch.textAlign) nextBox.textAlign = patch.textAlign;
+      return { ...prev, text: { ...prev.text, [key]: nextBox } };
+    });
+  };
+
+  const patchPairedLeaderStyle = (patch) => {
+    setLayoutConfig(prev => ({
+      ...prev,
+      text: {
+        ...prev.text,
+        leaderNameBox: { ...prev.text.leaderNameBox, ...(patch.textAlign ? {textAlign: patch.textAlign} : {}), style: { ...(prev.text.leaderNameBox.style || {}), ...patch } },
+        leaderCityBox: { ...prev.text.leaderCityBox, ...(patch.textAlign ? {textAlign: patch.textAlign} : {}), style: { ...(prev.text.leaderCityBox.style || {}), ...patch } }
+      }
+    }));
+  };
+
+  const adjustPairedLeaderStyleNumber = (key, delta, min = 0, max = 999) => {
+    setLayoutConfig(prev => {
+      const nameStyle = prev.text.leaderNameBox.style || {};
+      const cityStyle = prev.text.leaderCityBox.style || {};
+      const current = Number(nameStyle[key] ?? cityStyle[key] ?? min);
+      const next = Math.max(min, Math.min(max, current + delta));
+      return {
+        ...prev,
+        text: {
+          ...prev.text,
+          leaderNameBox: { ...prev.text.leaderNameBox, style: { ...nameStyle, [key]: next } },
+          leaderCityBox: { ...prev.text.leaderCityBox, style: { ...cityStyle, [key]: next } }
+        }
+      };
+    });
+  };
+
+
+  const patchAchieverTextStyle = (patch) => {
+    setLayoutConfig(prev => {
+      const keys = ['achieverNameBox', 'achieverRankBox', 'phoneBox'];
+      const text = { ...prev.text };
+      keys.forEach(key => {
+        const box = text[key] || {};
+        text[key] = { ...box, ...(patch.textAlign ? {textAlign: patch.textAlign} : {}), style: { ...(box.style || {}), ...patch } };
+      });
+      return { ...prev, text };
+    });
+  };
+
+  const adjustAchieverStyleNumber = (key, delta, min = 0, max = 999) => {
+    setLayoutConfig(prev => {
+      const nameStyle = prev.text.achieverNameBox.style || {};
+      const current = Number(nameStyle[key] ?? min);
+      const next = Math.max(min, Math.min(max, current + delta));
+      const text = { ...prev.text };
+      ['achieverNameBox', 'achieverRankBox', 'phoneBox'].forEach(k => {
+        const box = text[k] || {};
+        text[k] = { ...box, style: { ...(box.style || {}), [key]: next } };
+      });
+      return { ...prev, text };
+    });
   };
 
   // =========================================================
@@ -1113,7 +1533,7 @@ function AarshApp() {
   // =========================================================
 
   const generate = async () => {
-    if (!validateStep2()) return;
+    if (!validateLeader() || !validateAchiever()) return;
 
     if (points < 5) {
       alert("Insufficient Credits (Requires 5). Please purchase more.");
@@ -1156,7 +1576,7 @@ function AarshApp() {
       });
 
       setPoints(newCredits);
-      setStep(3);
+      setStep(4);
 
       await addNotification({
         title: "Poster Created",
@@ -1180,98 +1600,249 @@ function AarshApp() {
   // DOWNLOAD
   // =========================================================
 
-  const download = async () => {
+  const createPosterCanvas = async (scale = 2) => {
+    if (!posterRef.current) throw new Error("Poster preview is not ready.");
+    if (document.fonts?.ready) await document.fonts.ready;
 
-    if (!posterRef.current || isDownloading)
-      return;
+    // IMPORTANT: The live poster preview is the single source of truth.
+    // We capture the exact visual poster the user is seeing in Step 2/3,
+    // then resize that finished image for the requested download size.
+    // This prevents a second layout calculation from changing text size,
+    // alignment, photo crop, or spacing during export.
+    const source = posterRef.current;
+    const liveWidth = Math.round(source.offsetWidth || source.getBoundingClientRect().width);
+    const liveHeight = Math.round(source.offsetHeight || (liveWidth * (referencePosterMode ? 1600 / 1600 : 1600 / 1067)));
 
-    setIsDownloading(true);
+    if (!liveWidth || !liveHeight) {
+      throw new Error("Poster preview is not ready. Please wait and try again.");
+    }
+
+    const captureHost = document.createElement('div');
+    captureHost.setAttribute('data-export-host', 'true');
+    captureHost.style.cssText =
+      `position:fixed;left:-20000px;top:0;width:${liveWidth}px;height:${liveHeight}px;` +
+      'display:block;visibility:hidden;pointer-events:none;overflow:hidden;' +
+      'background:#fff;z-index:-2147483647;';
+
+    const captureNode = source.cloneNode(true);
+    captureNode.style.cssText =
+      `position:relative;display:block;visibility:visible;opacity:1;` +
+      `width:${liveWidth}px;height:${liveHeight}px;min-width:${liveWidth}px;max-width:${liveWidth}px;` +
+      `min-height:${liveHeight}px;max-height:${liveHeight}px;margin:0;padding:0;` +
+      'transform:none;zoom:1;overflow:hidden;box-sizing:border-box;';
+
+    captureNode.querySelectorAll(
+      'button,input,select,textarea,.aarsh-preview-toolbar,.preview-toolbar,.alignment-toolbar,[data-export-ignore]'
+    ).forEach(el => el.remove());
+
+    // Do NOT convert the live text into a new 1067x1600 layout here.
+    // The browser's current preview CSS is intentionally preserved exactly.
+    // Only make the text clone safe for html2canvas; all font sizes, line
+    // heights, alignment, positions and effects remain exactly as previewed.
+    const sourceTexts = Array.from(source.querySelectorAll('[data-poster-text]'));
+    const cloneTexts = Array.from(captureNode.querySelectorAll('[data-poster-text]'));
+
+    sourceTexts.forEach((sourceEl, index) => {
+      const cloneEl = cloneTexts[index];
+      if (!cloneEl) return;
+
+      const computed = getComputedStyle(sourceEl);
+      const exportAlign =
+        computed.textAlign ||
+        sourceEl.dataset.textAlign ||
+        sourceEl.style.textAlign ||
+        'center';
+
+      cloneEl.style.textAlign = exportAlign;
+      cloneEl.style.fontSize = computed.fontSize;
+      cloneEl.style.fontFamily = computed.fontFamily;
+      cloneEl.style.fontWeight = computed.fontWeight;
+      cloneEl.style.fontStyle = computed.fontStyle;
+      cloneEl.style.letterSpacing = computed.letterSpacing;
+      cloneEl.style.lineHeight = computed.lineHeight;
+      cloneEl.style.textTransform = computed.textTransform;
+      cloneEl.style.color = computed.color;
+      cloneEl.style.backgroundImage = computed.backgroundImage;
+      cloneEl.style.backgroundClip = computed.backgroundClip;
+      cloneEl.style.webkitBackgroundClip = computed.webkitBackgroundClip;
+      cloneEl.style.webkitTextFillColor = computed.webkitTextFillColor;
+      cloneEl.style.webkitTextStroke = computed.webkitTextStroke;
+      cloneEl.style.textShadow = computed.textShadow;
+      cloneEl.style.textDecoration = computed.textDecoration;
+      cloneEl.style.display = computed.display;
+      cloneEl.style.alignItems = computed.alignItems;
+      cloneEl.style.justifyContent = computed.justifyContent;
+      cloneEl.style.whiteSpace = computed.whiteSpace;
+      cloneEl.style.overflow = computed.overflow;
+    });
+
+    captureHost.appendChild(captureNode);
+    document.body.appendChild(captureHost);
 
     try {
+      const images = Array.from(captureNode.querySelectorAll('img'));
+      await Promise.all(images.map((img) => {
+        img.removeAttribute('loading');
+        img.setAttribute('decoding', 'sync');
 
-      if (
-        document.fonts &&
-        document.fonts.ready
-      ) {
-        await document.fonts.ready;
-      }
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
 
-      const canvas = await html2canvas(
-        posterRef.current,
-        {
-          scale: 2,
+        return new Promise((resolve) => {
+          const done = () => {
+            img.removeEventListener('load', done);
+            img.removeEventListener('error', done);
+            resolve();
+          };
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+        });
+      }));
 
-          useCORS: true,
-
-          allowTaint: false,
-
-          backgroundColor: null,
-
-          logging: false,
-
-          onclone: (
-            clonedDoc
-          ) => {
-
-            const canvasElement = clonedDoc.querySelector('[data-poster-canvas]');
-             if (canvasElement) canvasElement.style.transform = 'none';
-
-             const textElements =
-              clonedDoc.querySelectorAll(
-                '[data-poster-text]'
-              );
-
-            textElements.forEach(
-              (el) => {
-
-                el.style.opacity = '1';
-
-                el.style.visibility =
-                  'visible';
-
-                el.style.overflow =
-                  'visible';
-              }
-            );
-          }
-        }
+      await new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
       );
 
-      const link =
-        document.createElement('a');
-
-      link.download =
-        `Poster-${aF || 'Design'}.png`;
-
-      link.href =
-        canvas.toDataURL(
-          'image/png',
-          1.0
-        );
-
-      document.body.appendChild(link);
-
-      link.click();
-
-      document.body.removeChild(link);
-
-      await addNotification({
-        title: "Poster Downloaded",
-        message: "Your generated poster was downloaded successfully.",
-        type: "poster"
+      const canvas = await html2canvas(captureNode, {
+        scale,
+        width: liveWidth,
+        height: liveHeight,
+        x: 0,
+        y: 0,
+        windowWidth: liveWidth,
+        windowHeight: liveHeight,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 30000,
+        removeContainer: true
       });
 
-    } catch (err) {
+      if (!canvas.width || !canvas.height) {
+        throw new Error("Poster export produced an empty canvas.");
+      }
 
-      alert(
-        "Download failed: " +
-        err.message
-      );
-
+      return canvas;
     } finally {
+      captureHost.remove();
+    }
+  };
 
+  const canvasToBlob = (canvas, type = 'image/png', quality = 1) =>
+    new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob && blob.size > 0) resolve(blob);
+        else reject(new Error("Unable to create a poster file."));
+      }, type, quality);
+    });
+
+  const resizePosterCanvas = (sourceCanvas, targetWidth) => {
+    const BASE_W = referencePosterMode ? 1600 : 1067;
+    const BASE_H = referencePosterMode ? 1600 : 1600;
+    const targetHeight = Math.round(targetWidth * BASE_H / BASE_W);
+    const output = document.createElement('canvas');
+    output.width = targetWidth;
+    output.height = targetHeight;
+
+    const ctx = output.getContext('2d', { alpha: false });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetWidth, targetHeight);
+    ctx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+    return output;
+  };
+
+  const saveBlob = (blob, filename) => {
+    if (!blob || blob.size <= 0) throw new Error("Generated file is empty.");
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  const downloadImageAtWidth = async (targetWidth) => {
+    if (isDownloading) return;
+    try {
+      setIsDownloading(true);
+      const baseCanvas = await createPosterCanvas(2);
+      const outputCanvas = resizePosterCanvas(baseCanvas, targetWidth);
+      const blob = await canvasToBlob(outputCanvas, 'image/png', 1);
+      const label = targetWidth >= 3840 ? '4K' : `${targetWidth}px`;
+      saveBlob(blob, `Poster-${aF || 'Design'}-${label}.png`);
+      await addNotification({ title: "Poster Downloaded", message: `Your ${label} PNG poster was downloaded successfully.`, type: "poster" });
+    } catch (err) {
+      alert("Download failed: " + (err?.message || "Please try again."));
+    } finally {
       setIsDownloading(false);
+    }
+  };
 
+  const download = () => downloadImageAtWidth(1080);
+
+  const makePdfBlob = async (canvas) => {
+    const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.96);
+    const base64 = jpegDataUrl.split(',')[1];
+    const binary = atob(base64);
+    const jpegBytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) jpegBytes[i] = binary.charCodeAt(i);
+
+    const pageW = 595.28, pageH = 841.89;
+    const ratio = canvas.width / canvas.height;
+    const pageRatio = pageW / pageH;
+    let drawW, drawH, x, y;
+    if (ratio > pageRatio) {
+      drawW = pageW; drawH = drawW / ratio; x = 0; y = (pageH - drawH) / 2;
+    } else {
+      drawH = pageH; drawW = drawH * ratio; y = 0; x = (pageW - drawW) / 2;
+    }
+
+    const enc = new TextEncoder();
+    const chunks = [];
+    const offsets = [];
+    let total = 0;
+    const pushText = (s) => { const b = enc.encode(s); chunks.push(b); total += b.length; };
+    const pushBytes = (b) => { chunks.push(b); total += b.length; };
+    const object = (n, body) => { offsets[n] = total; pushText(`${n} 0 obj\n${body}\nendobj\n`); };
+
+    pushText('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n');
+    object(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    object(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    object(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>');
+
+    offsets[4] = total;
+    pushText(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+    pushBytes(jpegBytes);
+    pushText('\nendstream\nendobj\n');
+
+    const content = `q\n${drawW.toFixed(3)} 0 0 ${drawH.toFixed(3)} ${x.toFixed(3)} ${y.toFixed(3)} cm\n/Im1 Do\nQ\n`;
+    object(5, `<< /Length ${enc.encode(content).length} >>\nstream\n${content}endstream`);
+
+    const xref = total;
+    pushText('xref\n0 6\n0000000000 65535 f \n');
+    for (let i = 1; i <= 5; i++) pushText(`${String(offsets[i]).padStart(10,'0')} 00000 n \n`);
+    pushText(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+
+    return new Blob(chunks, { type: 'application/pdf' });
+  };
+
+  const downloadPDF = async () => {
+    if (isDownloading) return;
+    try {
+      setIsDownloading(true);
+      const canvas = await createPosterCanvas(2);
+      const blob = await makePdfBlob(canvas);
+      saveBlob(blob, `Poster-${aF || 'Design'}.pdf`);
+      await addNotification({ title: "Poster PDF Downloaded", message: "Your print-ready PDF poster was downloaded successfully.", type: "poster" });
+    } catch (error) {
+      alert('PDF export failed: ' + (error?.message || 'Please try again.'));
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -1285,6 +1856,7 @@ function AarshApp() {
   };
 
   const startNewPoster = () => {
+    setReferencePosterMode(false);
     setStep(1);
     setTpl(1);
     setRank(RANKS[0]);
@@ -1293,12 +1865,14 @@ function AarshApp() {
     setLL('');
     setLCity('');
     setLPhoto(null);
+    setLPhotoFile(null);
     setLRemovedPhoto(null);
     setLStyle(1);
     setAF('');
     setAL('');
     setAPh('');
     setAPhoto(null);
+    setAPhotoFile(null);
     setARemovedPhoto(null);
     setAStyle(1);
     setErrors({});
@@ -1316,39 +1890,6 @@ function AarshApp() {
   };
 
 
-  const createPosterCanvas = async () => {
-    if (!posterRef.current) throw new Error("Poster preview is not ready.");
-
-    if (document.fonts?.ready) {
-      await document.fonts.ready;
-    }
-
-    return await html2canvas(posterRef.current, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: null,
-      logging: false,
-      onclone: (clonedDoc) => {
-        const canvasElement = clonedDoc.querySelector('[data-poster-canvas]');
-        if (canvasElement) canvasElement.style.transform = 'none';
-
-        clonedDoc.querySelectorAll('[data-poster-text]').forEach((el) => {
-          el.style.opacity = '1';
-          el.style.visibility = 'visible';
-          el.style.overflow = 'visible';
-        });
-      }
-    });
-  };
-
-  const canvasToBlob = (canvas, type = 'image/png', quality = 1) =>
-    new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("Unable to create poster file."));
-      }, type, quality);
-    });
 
   const sharePoster = async () => {
     if (isDownloading) return;
@@ -1389,50 +1930,6 @@ function AarshApp() {
     }
   };
 
-  const downloadPDF = async () => {
-    if (isDownloading) return;
-
-    try {
-      setIsDownloading(true);
-      const canvas = await createPosterCanvas();
-      const imageData = canvas.toDataURL('image/jpeg', 0.98);
-
-      const printWindow = window.open('', '_blank', 'width=900,height=1200');
-      if (!printWindow) {
-        throw new Error('Popup blocked. Please allow popups for Aarsh Digital and try again.');
-      }
-
-      printWindow.document.write(`
-        <!doctype html>
-        <html>
-          <head>
-            <title>Poster-${aF || 'Design'}</title>
-            <style>
-              @page { size: A4 portrait; margin: 0; }
-              html, body { margin: 0; padding: 0; background: #fff; }
-              body { display: flex; justify-content: center; align-items: flex-start; }
-              img { width: 100vw; height: auto; max-height: 100vh; object-fit: contain; }
-            </style>
-          </head>
-          <body>
-            <img src="${imageData}" alt="Aarsh Digital Poster" />
-            <script>
-              window.onload = function () {
-                setTimeout(function () {
-                  window.print();
-                }, 250);
-              };
-            <\/script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    } catch (error) {
-      alert('PDF export failed: ' + (error.message || 'Please try again.'));
-    } finally {
-      setIsDownloading(false);
-    }
-  };
 
   // =========================================================
   // INPUT CLASSES
@@ -1462,8 +1959,29 @@ function AarshApp() {
    phoneBox: { ...EXACT_COORDS.phoneBox }
  };
 
- const posterUrl =
-  `${CLOUDINARY_BASE}/${getRankSlug(rank)}_${tpl}.png?v=20260915`;
+ const posterUrl = `/templates/rank-common-4k/${String(tpl).padStart(2, '0')}.png`
+
+  const referenceTextStyle = (cfg, opts = {}) => {
+    const width = posterPreviewWidth || REFERENCE_CANVAS.w;
+    const size = Number(opts.size ?? cfg.size);
+    const fontFamily = opts.fontFamily || "'Garat', Arial, sans-serif";
+    const color = opts.color || '#ffffff';
+    return {
+      position:'absolute', left:`${(cfg.x / REFERENCE_CANVAS.w) * 100}%`, top:`${(cfg.y / REFERENCE_CANVAS.h) * 100}%`,
+      width:`${(cfg.w / REFERENCE_CANVAS.w) * 100}%`, height:`${(cfg.h / REFERENCE_CANVAS.h) * 100}%`,
+      fontSize:`${size * width / REFERENCE_CANVAS.w}px`, fontFamily, fontWeight:opts.weight || 800,
+      fontStyle:opts.italic ? 'italic' : 'normal', color, display:'flex', alignItems:'center', justifyContent:'center',
+      textAlign:'center', whiteSpace:'nowrap', overflow:'visible', lineHeight:1, zIndex:opts.zIndex || 12,
+      textShadow:opts.shadow === false ? 'none' : '0 3px 7px rgba(0,0,0,.58)',
+      ...(opts.gold ? { background:'linear-gradient(180deg,#fff6a0 0%,#ffd34d 34%,#c98405 72%,#ffe77a 100%)', WebkitBackgroundClip:'text', backgroundClip:'text', WebkitTextFillColor:'transparent' } : {})
+    };
+  };
+
+  const referencePhotoStyle = (cfg, extra = {}) => ({
+    position:'absolute', left:`${(cfg.x / REFERENCE_CANVAS.w) * 100}%`, top:`${(cfg.y / REFERENCE_CANVAS.h) * 100}%`,
+    width:`${(cfg.w / REFERENCE_CANVAS.w) * 100}%`, height:`${(cfg.h / REFERENCE_CANVAS.h) * 100}%`,
+    zIndex:6, overflow:'hidden', ...extra
+  });
 
   // =========================================================
   // TEXT STYLE
@@ -1474,6 +1992,7 @@ function AarshApp() {
     customColor
   ) => {
     const style = config?.style || {};
+    const textAlign = style.textAlign || config?.textAlign || 'center';
     const fillMode = style.fillMode || 'solid';
     const gradient = fillMode === 'gradient'
       ? `linear-gradient(${style.gradientAngle ?? 90}deg, ${style.gradientA || '#ffffff'}, ${style.gradientB || '#e7e7e7'}, ${style.gradientC || '#ffffff'})`
@@ -1485,27 +2004,40 @@ function AarshApp() {
       top: `${(config.y / 1600) * 100}%`,
       width: `${(config.w / 1067) * 100}%`,
       height: `${(config.h / 1600) * 100}%`,
-      fontSize: `${(config === TEXT_COORDS.achieverRankBox || config === TEXT_COORDS.phoneBox) ? 11 : (style.fontSize ?? config.size ?? 23)}px`,
+      // Step 2/3/4 preview text must scale with the actual poster width.
+      // The calibrated sizes are defined on the 1067px master canvas; without
+      // this conversion a 390-600px live preview would export oversized text.
+      fontSize: `${(Number(style.fontSize ?? config.size ?? 15) * (step === 1 ? 1 : Math.min(1, posterPreviewWidth / 1067))).toFixed(4)}px`,
       fontFamily: style.font || config.font,
       fontWeight: style.weight ?? 400,
       fontStyle: style.italic ? 'italic' : 'normal',
-      textDecoration: style.underline ? 'underline' : 'none',
+      textDecoration: style.underline && style.strike ? 'underline line-through' : (style.underline ? 'underline' : (style.strike ? 'line-through' : 'none')),
+      letterSpacing: `${style.letterSpacing ?? 0}px`,
+      lineHeight: style.lineHeight ?? 1,
+      textTransform: style.textTransform || 'none',
+      textAlign,
       color: fillMode === 'gradient' ? 'transparent' : (style.fillColor || customColor),
       backgroundImage: gradient,
       backgroundClip: fillMode === 'gradient' ? 'text' : 'border-box',
       WebkitBackgroundClip: fillMode === 'gradient' ? 'text' : 'border-box',
       WebkitTextFillColor: fillMode === 'gradient' ? 'transparent' : undefined,
       WebkitTextStroke: `${style.strokeWidth ?? 0}px ${style.strokeColor || '#000000'}`,
-      textShadow: style.shadow === false
+      textShadow: style.shadow === false || Number(style.shadowBlur ?? 0) <= 0
         ? 'none'
-        : `${style.shadowX ?? 2}px ${style.shadowY ?? 2}px ${style.shadowBlur ?? 5}px rgba(0, 0, 0, 0.85)`,
+        : `${style.shadowX ?? 0}px ${style.shadowY ?? 0}px ${style.shadowBlur ?? 0}px ${style.shadowColor || 'rgba(0, 0, 0, 0.85)'}`, 
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
+      // Keep the flex box aligned with the selected text alignment.
+      // Previously justifyContent was always center, so the alignment
+      // buttons changed textAlign but the visible/exported text stayed centered.
+      justifyContent:
+        textAlign === 'left'
+          ? 'flex-start'
+          : textAlign === 'right'
+            ? 'flex-end'
+            : 'center',
       whiteSpace: 'nowrap',
       overflow: 'visible',
-      lineHeight: 1,
       zIndex: 10
     };
   };
@@ -1527,516 +2059,309 @@ function AarshApp() {
   // LOGIN PAGE
   // =========================================================
 
+  // =========================================================
+  // LOGIN PAGE — EXACT MATCH TO DESKTOP & MOBILE REFERENCE
+  // =========================================================
   if (!user || !profileReady) {
-
     return (
-      <div className="aarsh-login-page">
-
-        {/* Decorative floating elements */}
-
-        <div className="login-decoration decoration-star">
-          ✦
-        </div>
-
-        <div className="login-decoration decoration-sparkle">
-          ✦
-        </div>
-
-        <div className="login-decoration decoration-heart">
-          ♡
-        </div>
-
-        <div className="login-decoration decoration-smile">
-          ☺
-        </div>
-
-        {/* LEFT CREATIVE AREA */}
-
-        <div className="login-side login-side-left">
-
-          <div className="creative-note note-yellow">
-
-            <span>✨</span>
-
-            <b>
-              Turn Ideas
-            </b>
-
-            <small>
-              into amazing posters!
-            </small>
-
-          </div>
-
-          <div className="login-illustration-placeholder">
-
-            <div className="illustration-circle yellow-circle">
-
-              <span>
-                😄
-              </span>
-
+      <div className="aarsh-auth-viewport">
+        <div className="aarsh-auth-container">
+          {/* LEFT: HERO & SHOWCASE SECTION */}
+          <div className="aarsh-auth-hero">
+            <div className="aarsh-hero-brand-badge">
+              <div className="aarsh-hero-3d-logo">
+                <img src="/aarsh-digital-logo.png" alt="Aarsh Digital" />
+              </div>
+              <div className="aarsh-hero-brand-text">
+                <h2>Aarsh Digital</h2>
+                <p>AI • CREATE • DESIGN • GROW</p>
+              </div>
             </div>
 
-            <div className="illustration-person yellow-person">
-              👦
+            <div className="aarsh-hero-copy">
+              <span className="aarsh-hero-sub">Welcome to</span>
+              <h1 className="aarsh-hero-title">
+                AARSH <span className="aarsh-gradient-word">DIGITAL</span>
+              </h1>
+              <p className="aarsh-hero-desc">
+                Your All-in-One Creative Platform for Network Marketers
+              </p>
             </div>
 
-          </div>
-
-          <div className="floating-object object-book">
-            📚
-          </div>
-
-          <div className="floating-object object-coffee">
-            ☕
-          </div>
-
-        </div>
-
-        {/* CENTER LOGIN CARD */}
-
-        <div className="aarsh-login-card">
-
-          <div className="login-logo-wrap">
-
-            <img
-              src="/aarsh-digital-logo.png"
-              alt="Aarsh Digital Logo"
-              className="login-logo"
-            />
-
-          </div>
-
-          <div className="login-brand">
-
-            <h1>
-              Aarsh Digital
-            </h1>
-
-            <p>
-              AI • CREATE • DESIGN • GROW
-            </p>
-
-          </div>
-
-          <div className="login-heading">
-
-            <h2>
-
-              Create Posters
-              <br />
-
-              that Make People
-              <br />
-
-              <span>
-                Smile 😊
-              </span>
-
-            </h2>
-
-            <p>
-              Create • Customize • Share
-            </p>
-
-          </div>
-
-          {/* GOOGLE LOGIN */}
-
-          <button
-            onClick={handleLogin}
-            className="login-google-btn"
-          >
-
-            <span className="google-icon">
-              G
-            </span>
-
-            <span>
-              Continue with Google
-            </span>
-
-            <span className="button-arrow">
-              →
-            </span>
-
-          </button>
-
-          {/* DIVIDER */}
-
-          <div className="login-divider">
-
-            <span></span>
-
-            <b>
-              OR
-            </b>
-
-            <span></span>
-
-          </div>
-
-          {/* RETURNING USER LOGIN */}
-
-          <button
-            type="button"
-            className="login-phone-btn"
-            onClick={() => setShowPinLogin(true)}
-          >
-            <span className="phone-icon">
-              🔐
-            </span>
-
-            <span>
-              <strong>
-                Login with Username + PIN
-              </strong>
-
-              <small>
-                4-digit PIN • Fast login
-              </small>
-            </span>
-
-            <span className="button-arrow">
-              →
-            </span>
-          </button>
-
-          <div className="login-trust">
-
-            <span>
-              🔒
-            </span>
-
-            <span>
-              Secure &amp; simple login
-            </span>
-
-          </div>
-
-          <div className="login-happiness">
-
-            <span>
-              ✨
-            </span>
-
-            <span>
-              Let's create something awesome!
-            </span>
-
-            <span>
-              ✨
-            </span>
-
-          </div>
-
-        </div>
-
-        {/* RIGHT CREATIVE AREA */}
-
-        <div className="login-side login-side-right">
-
-          <div className="creative-note note-purple">
-
-            <span>
-              🎨
-            </span>
-
-            <b>
-              Design is Fun!
-            </b>
-
-            <small>
-              Make something awesome
-            </small>
-
-          </div>
-
-          <div className="login-illustration-placeholder">
-
-            <div className="illustration-circle purple-circle">
-
-              <span>
-                ✌️
-              </span>
-
+            <div className="aarsh-features-strip">
+              <div className="aarsh-feature-pill">
+                <span className="pill-icon icon-pink">✏️</span>
+                <b>Creative<br />Banners</b>
+              </div>
+              <div className="aarsh-feature-pill">
+                <span className="pill-icon icon-cyan">👥</span>
+                <b>Upline<br />Showcase</b>
+              </div>
+              <div className="aarsh-feature-pill">
+                <span className="pill-icon icon-rose">🖼️</span>
+                <b>Premium<br />Templates</b>
+              </div>
+              <div className="aarsh-feature-pill">
+                <span className="pill-icon icon-gold">👑</span>
+                <b>Build<br />Your Brand</b>
+              </div>
             </div>
 
-            <div className="illustration-person purple-person">
-              👩
-            </div>
+            <div className="aarsh-podium-showcase">
+              <div className="aarsh-podium-showcase">
+              <div className="aarsh-cards-row">
+                {/* 1. Welcome to our Team */}
+                <div className="showcase-card card-welcome">
+                  <img 
+                    src="/auth-cards/welcome.jpg" 
+                    alt="Welcome to our Team" 
+                    className="showcase-card-img" 
+                  />
+                </div>
 
-          </div>
+                {/* 2. Team Success */}
+                <div className="showcase-card card-success">
+                  <img 
+                    src="/auth-cards/team-success.jpg" 
+                    alt="Team Success" 
+                    className="showcase-card-img" 
+                  />
+                </div>
 
-          <div className="floating-object object-laptop">
-            💻
-          </div>
+                {/* 3. Center Rank Promotion Masterpiece */}
+                <div className="showcase-card card-rank-main">
+                  <div className="card-glow-halo"></div>
+                  <img 
+                    src="/auth-cards/rank-promotion.jpg" 
+                    alt="Rank Promotion" 
+                    className="showcase-card-img" 
+                  />
+                </div>
 
-          <div className="floating-object object-sparkle">
-            ✨
-          </div>
+                {/* 4. Festival Greetings */}
+                <div className="showcase-card card-festival">
+                  <img 
+                    src="/auth-cards/festival.jpg" 
+                    alt="Festival Greetings" 
+                    className="showcase-card-img" 
+                  />
+                </div>
 
-        </div>
-
-        {/* BOTTOM FEATURES */}
-
-        <div className="login-features">
-
-          <div className="login-feature">
-
-            <span>
-              ✨
-            </span>
-
-            <div>
-
-              <b>
-                Beautiful Templates
-              </b>
-
-              <small>
-                Ready to create
-              </small>
-
-            </div>
-
-          </div>
-
-          <div className="login-feature">
-
-            <span>
-              ⚡
-            </span>
-
-            <div>
-
-              <b>
-                Super Easy
-              </b>
-
-              <small>
-                Just a few clicks
-              </small>
-
-            </div>
-
-          </div>
-
-          <div className="login-feature">
-
-            <span>
-              ❤️
-            </span>
-
-            <div>
-
-              <b>
-                Made for Everyone
-              </b>
-
-              <small>
-                Create &amp; share happiness
-              </small>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* =================================================
-            FIRST LOGIN: USERNAME + PIN SETUP MODAL
-        ================================================= */}
-
-        {showSetupModal && (
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-            style={{
-              background: "rgba(15, 23, 42, 0.72)",
-              backdropFilter: "blur(10px)"
-            }}
-          >
-            <div className="relative bg-white w-full max-w-md rounded-[30px] shadow-2xl p-6 md:p-8">
-              <div
-                className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4"
-                style={{
-                  background: "linear-gradient(135deg, #FCE7F3, #EDE9FE)"
-                }}
-              >
-                ✨
+                {/* 5. Motivation Quote */}
+                <div className="showcase-card card-motivation">
+                  <img 
+                    src="/auth-cards/motivation.jpg" 
+                    alt="Motivation Quote" 
+                    className="showcase-card-img" 
+                  />
+                </div>
               </div>
 
-              <h2 className="text-2xl md:text-3xl font-black text-center text-gray-900">
-                Create Your Aarsh Digital ID
-              </h2>
+              {/* 3D Glowing Podium Base */}
+              <div className="aarsh-pedestal-base">
+                <div className="pedestal-disc top-disc"></div>
+                <div className="pedestal-disc mid-disc"></div>
+                <div className="pedestal-glow-under"></div>
+              </div>
+            </div>
 
-              <p className="text-center text-gray-500 text-sm mt-2 mb-6">
-                One-time setup. Next time you can login with your username + 4-digit PIN.
-              </p>
+              <div className="aarsh-pedestal-base">
+                <div className="pedestal-disc top-disc"></div>
+                <div className="pedestal-disc mid-disc"></div>
+                <div className="pedestal-glow-under"></div>
+              </div>
+            </div>
 
-              <label className="block text-sm font-black text-gray-700 mb-2">
-                Choose Username
-              </label>
+            <div className="aarsh-trust-bar">
+              <div className="trust-item">
+                <span className="trust-icon icon-purple">⚡</span>
+                <div><b>Professional</b><small>Designs</small></div>
+              </div>
+              <div className="trust-item">
+                <span className="trust-icon icon-blue">👥</span>
+                <div><b>Network</b><small>Growth</small></div>
+              </div>
+              <div className="trust-item">
+                <span className="trust-icon icon-cyan">🛡️</span>
+                <div><b>Brand</b><small>Consistency</small></div>
+              </div>
+              <div className="trust-item">
+                <span className="trust-icon icon-gold">⭐</span>
+                <div><b>Success</b><small>Stories</small></div>
+              </div>
+            </div>
+          </div>
 
-              <div className="flex items-center border-2 border-purple-100 focus-within:border-purple-500 rounded-2xl overflow-hidden bg-gray-50 mb-4">
-                <span className="px-4 font-black text-purple-600">@</span>
+{/* RIGHT: LOGIN CARD */}
+          <div className="aarsh-auth-form-side">
+            {/*  TAGLINE KO RIGHT SIDE KE UPAR YAHAN RAKHEIN  */}
+            <div className="aarsh-auth-top-tag">
+              <div className="aarsh-tagline-text">
+                <span>CREATE</span> • <span>GROW</span> • <span>LEAD</span> • <span>TOGETHER</span>
+              </div>
+              <div className="aarsh-auth-top-line"></div>
+            </div>
+
+            <div className="aarsh-auth-card">
+              <div className="aarsh-card-brand">
+                <div className="aarsh-card-logo">
+                  <img src="/aarsh-digital-logo.png" alt="Aarsh Digital" />
+                </div>
+                <h3>Aarsh Digital</h3>
+                <p>AI • CREATE • DESIGN • GROW</p>
+              </div>
+              <div className="aarsh-card-header">
+                <h2>Login to Your Account</h2>
+                <span>Continue your journey with AARSH DIGITAL</span>
+              </div>
+
+              <button type="button" onClick={handleLogin} className="aarsh-google-auth-btn">
+                <div className="google-icon-box">
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                </div>
+                <strong>Continue with Google</strong>
+                <span className="arrow-sym">→</span>
+              </button>
+
+              <div className="aarsh-auth-divider">
+                <span></span><em>OR</em><span></span>
+              </div>
+
+              <div className="aarsh-input-field">
+                <span className="input-icon">✉</span>
                 <input
                   type="text"
-                  autoComplete="username"
-                  placeholder="yourname"
-                  maxLength="20"
-                  value={setupUsername}
-                  onChange={(e) =>
-                    setSetupUsername(
-                      e.target.value
-                        .toLowerCase()
-                        .replace(/[^a-z0-9_]/g, "")
-                        .slice(0, 20)
-                    )
-                  }
-                  className="flex-1 px-2 py-4 bg-transparent outline-none font-bold"
+                  placeholder="Enter your email or username"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
                 />
               </div>
 
-              <label className="block text-sm font-black text-gray-700 mb-2">
-                Create 4-Digit PIN
-              </label>
+              <div className="aarsh-input-field">
+                <span className="input-icon">🔒</span>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password or 4-digit PIN"
+                  value={loginPin}
+                  onChange={(e) => setLoginPin(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handlePinLogin(); }}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? '👁️' : '🙈'}
+                </button>
+              </div>
 
+              <div className="aarsh-forgot-wrap">
+                <button type="button" onClick={() => alert('Password reset ke liye support@aarshimage.in par contact karein.')}>
+                  Forgot Password?
+                </button>
+              </div>
+
+              <button type="button" disabled={loginLoading} onClick={handlePinLogin} className="aarsh-main-login-btn">
+                {loginLoading ? 'Logging In…' : 'Login →'}
+              </button>
+
+              <div className="aarsh-card-footer">
+                Don’t have an account?{' '}
+                <button type="button" onClick={() => setShowSetupModal(true)}>Create Account</button>
+              </div>
+            </div>
+          </div>
+        </div>
+       {/* ENHANCED ATTRACTIVE FOOTER */}
+        <footer className="aarsh-common-footer aarsh-login-footer">
+          <div className="aarsh-footer-top-row">
+            {/* Left: Brand */}
+            <div className="aarsh-footer-brand">
+              <img src="/aarsh-digital-logo.png" alt="Aarsh Digital" className="aarsh-footer-logo" />
+              <span>AI • CREATE • DESIGN • GROW</span>
+            </div>
+
+            {/* Center: Modern Attractive Tagline */}
+            <div className="aarsh-footer-tagline-box">
+              <span className="tagline-badge">✦ OFFICIAL PLATFORM</span>
+              <p className="tagline-text">Empowering Network Marketers with Next-Gen AI Creatives</p>
+            </div>
+
+            {/* Right: Social Media Icons */}
+            <div className="aarsh-footer-socials" aria-label="Aarsh Digital social links">
+              <a href="https://wa.me/919296943202" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" title="WhatsApp"><img className="aarsh-social-img" src="/whatsapp.png" alt="" /></a>
+              <a href="https://www.facebook.com/share/1FdGrSAcXc/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook"><img className="aarsh-social-img" src="/facebook.png" alt="" /></a>
+              <a href="https://www.instagram.com/aarshdigital?stkn=NzZ6MHZiMzk3MXkz" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><img className="aarsh-social-img" src="/instagram.png" alt="" /></a>
+              <a href="https://x.com/AarshDigital" target="_blank" rel="noopener noreferrer" aria-label="X" title="X"><img className="aarsh-social-img" src="/x.png" alt="" /></a>
+              <a href="https://www.threads.com/@aarshdigital" target="_blank" rel="noopener noreferrer" aria-label="Threads" title="Threads"><img className="aarsh-social-img" src="/threads.png" alt="" /></a>
+              <a href="https://www.linkedin.com/in/aarsh-digital-872077437?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn"><img className="aarsh-social-img" src="/linkedin.png" alt="" /></a>
+              <a href="mailto:support@aarshimage.in" aria-label="Gmail" title="Gmail"><img className="aarsh-social-img" src="/gmail.png" alt="" /></a>
+              <a href="tel:+919296943202" aria-label="Phone" title="Phone"><img className="aarsh-social-img" src="/phone.png" alt="" /></a>
+            </div>
+          </div>
+
+          {/* Bottom Row: Links & Copyright */}
+          <div className="aarsh-footer-bottom-row">
+            <div className="aarsh-footer-links">
+              <span>Privacy Policy</span><i>•</i><span>Terms of Service</span><i>•</i><span>Help Center</span><i>•</i><span>Contact Us</span>
+            </div>
+            <div className="aarsh-footer-copyright">
+              © {new Date().getFullYear()} Aarsh Digital. All rights reserved.
+            </div>
+          </div>
+        </footer>
+
+        {showSetupModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+            <div className="relative bg-white w-full max-w-md rounded-[30px] shadow-2xl p-6 md:p-8">
+              <button
+                type="button"
+                onClick={() => setShowSetupModal(false)}
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600"
+              >✕</button>
+              <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-3 bg-gradient-to-br from-pink-100 to-purple-100">✨</div>
+              <h2 className="text-2xl font-black text-center text-slate-900">Create Aarsh Digital ID</h2>
+              <p className="text-center text-slate-500 text-xs mt-1 mb-5">Set up your username and 4-digit PIN for instant access.</p>
+              <label className="block text-xs font-black text-slate-700 mb-1">Choose Username</label>
+              <div className="flex items-center border border-purple-200 rounded-xl overflow-hidden bg-slate-50 mb-3">
+                <span className="px-3 font-black text-purple-600">@</span>
+                <input
+                  type="text"
+                  placeholder="yourname"
+                  value={setupUsername}
+                  onChange={(e) => setSetupUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  className="flex-1 px-2 py-3 bg-transparent outline-none font-bold text-sm"
+                />
+              </div>
+              <label className="block text-xs font-black text-slate-700 mb-1">Create 4-Digit PIN</label>
               <input
                 type="password"
                 inputMode="numeric"
-                autoComplete="new-password"
-                placeholder="••••"
                 maxLength="4"
+                placeholder="••••"
                 value={setupPin}
-                onChange={(e) =>
-                  setSetupPin(
-                    e.target.value.replace(/\D/g, "").slice(0, 4)
-                  )
-                }
-                className="w-full border-2 border-purple-100 focus:border-purple-500 rounded-2xl py-4 px-4 text-center text-3xl font-black tracking-[0.5em] outline-none mb-5"
+                onChange={(e) => setSetupPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                className="w-full border border-purple-200 rounded-xl py-3 px-4 text-center text-2xl font-black tracking-[0.4em] outline-none mb-4"
               />
-
               <button
                 type="button"
                 onClick={setupProfile}
                 disabled={setupLoading}
-                className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg transition-all disabled:opacity-60"
-                style={{
-                  background: "linear-gradient(135deg, #ec4899, #7c3aed, #2563eb)"
-                }}
+                className="w-full py-3.5 rounded-xl text-white font-black text-sm bg-gradient-to-r from-pink-500 via-purple-600 to-blue-600 shadow-lg disabled:opacity-60"
               >
-                {setupLoading ? "⏳ Creating Account..." : "Create My Aarsh Digital ID 🚀"}
-              </button>
-
-              <p className="text-center text-xs text-gray-400 mt-4">
-                🔒 Your PIN is securely hashed on the server.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* =================================================
-            RETURNING USER: USERNAME + PIN LOGIN
-        ================================================= */}
-
-        {showPinLogin && !showSetupModal && (
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-            style={{
-              background: "rgba(15, 23, 42, 0.72)",
-              backdropFilter: "blur(10px)"
-            }}
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowPinLogin(false);
-              }
-            }}
-          >
-            <div className="relative bg-white w-full max-w-md rounded-[30px] shadow-2xl p-6 md:p-8">
-              <button
-                type="button"
-                onClick={() => setShowPinLogin(false)}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 text-lg"
-              >
-                ✕
-              </button>
-
-              <div
-                className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4"
-                style={{
-                  background: "linear-gradient(135deg, #DCFCE7, #DBEAFE)"
-                }}
-              >
-                🔐
-              </div>
-
-              <h2 className="text-2xl md:text-3xl font-black text-center text-gray-900">
-                Welcome Back
-              </h2>
-
-              <p className="text-center text-gray-500 text-sm mt-2 mb-6">
-                Enter your Aarsh Digital username and 4-digit PIN.
-              </p>
-
-              <input
-                type="text"
-                autoComplete="username"
-                placeholder="Username"
-                value={loginUsername}
-                onChange={(e) =>
-                  setLoginUsername(
-                    e.target.value
-                      .toLowerCase()
-                      .replace(/[^a-z0-9_]/g, "")
-                      .slice(0, 20)
-                  )
-                }
-                className="w-full border-2 border-purple-100 focus:border-purple-500 rounded-2xl py-4 px-4 font-bold outline-none mb-3"
-              />
-
-              <input
-                type="password"
-                inputMode="numeric"
-                autoComplete="current-password"
-                placeholder="4-digit PIN"
-                maxLength="4"
-                value={loginPin}
-                onChange={(e) =>
-                  setLoginPin(
-                    e.target.value.replace(/\D/g, "").slice(0, 4)
-                  )
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handlePinLogin();
-                }}
-                className="w-full border-2 border-purple-100 focus:border-purple-500 rounded-2xl py-4 px-4 text-center text-3xl font-black tracking-[0.5em] outline-none mb-5"
-              />
-
-              <button
-                type="button"
-                onClick={handlePinLogin}
-                disabled={loginLoading}
-                className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-lg disabled:opacity-60"
-                style={{
-                  background: "linear-gradient(135deg, #ec4899, #7c3aed, #2563eb)"
-                }}
-              >
-                {loginLoading ? "⏳ Checking..." : "Login to Aarsh Digital →"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowPinLogin(false)}
-                className="w-full mt-3 py-3 rounded-xl font-bold text-purple-700 hover:bg-purple-50"
-              >
-                ← Back to Google Login
+                {setupLoading ? 'Creating ID…' : 'Create My Aarsh ID 🚀'}
               </button>
             </div>
           </div>
         )}
-
+      </div>
+    );
+  }
 
         {/* LOGIN PAGE FOOTER — SAME BRANDING AS THE MAIN APP */}
         <footer className="aarsh-common-footer aarsh-login-footer">
@@ -2060,13 +2385,15 @@ function AarshApp() {
           </div>
         </footer>
 
-      </div>
-    );
-  }
-
   // =========================================================
   // MAIN APP
   // =========================================================
+
+  const openCreativeStudio = (openSettings = false) => {
+    setCreativeSettingsRequested(Boolean(openSettings));
+    setAppView('creative');
+    setOpenMenu(null);
+  };
 
   return (
 
@@ -2180,7 +2507,7 @@ function AarshApp() {
                 <div className="w-10 h-10 rounded-full bg-[#16396f] text-white flex items-center justify-center font-black border-2 border-cyan-300">{(user?.displayName || 'S').charAt(0).toUpperCase()}</div>
                 <div className="hidden xl:block text-left leading-tight"><div className="text-sm font-black text-[#122968]">Hello, {(user?.displayName || 'S').split(' ')[0]}</div><div className="text-[10px] font-bold text-fuchsia-600">♕ Premium Creator</div></div><span className="hidden md:block text-[#122968]">⌄</span>
               </button>
-              {openMenu === 'profile' && <div className="aarsh-profile-popup absolute right-0 top-[calc(100%+10px)] z-[80] w-72 rounded-3xl bg-gradient-to-br from-white via-[#f9f5ff] to-[#eef7ff] backdrop-blur-xl shadow-2xl border border-white p-3"><div className="px-3 py-3 border-b border-gray-100"><div className="font-black text-lg text-[#102965]">Hello, {(user?.displayName || 'Aarsh User').split(' ')[0]}</div><div className="text-xs text-fuchsia-600 font-bold">♕ Premium Creator</div></div><button onClick={openProfileEditor} className="w-full text-left p-3 rounded-xl hover:bg-purple-50 font-bold">♙ My Profile</button><button onClick={() => { setAppView('dashboard'); setOpenMenu(null); setTimeout(() => document.getElementById('creative-studios')?.scrollIntoView({ behavior: 'smooth' }), 50); }} className="w-full text-left p-3 rounded-xl hover:bg-blue-50 font-bold">▣ My Posters</button><button onClick={() => { setOpenMenu('transactions'); }} className="w-full text-left p-3 rounded-xl hover:bg-green-50 font-bold">◷ Transaction History</button><button onClick={() => setOpenMenu('notifications')} className="w-full text-left p-3 rounded-xl hover:bg-pink-50 font-bold">♧ Notifications</button><button onClick={openProfileEditor} className="w-full text-left p-3 rounded-xl hover:bg-gray-50 font-bold">⚙ Settings</button><div className="h-px bg-gray-100 my-1" /><button onClick={handleLogout} className="w-full text-left p-3 rounded-xl text-red-600 font-black hover:bg-red-50">↪ Logout</button></div>}
+              {openMenu === 'profile' && <div className="aarsh-profile-popup absolute right-0 top-[calc(100%+10px)] z-[80] w-72 rounded-3xl bg-gradient-to-br from-white via-[#f9f5ff] to-[#eef7ff] backdrop-blur-xl shadow-2xl border border-white p-3"><div className="px-3 py-3 border-b border-gray-100"><div className="font-black text-lg text-[#102965]">Hello, {(user?.displayName || 'Aarsh User').split(' ')[0]}</div><div className="text-xs text-fuchsia-600 font-bold">♕ Premium Creator</div></div><button onClick={openProfileEditor} className="w-full text-left p-3 rounded-xl hover:bg-purple-50 font-bold">♙ My Profile</button><button onClick={() => { setOpenMenu(null); setCreativeSettingsRequested(true); setAppView('creative'); }} className="w-full text-left p-3 rounded-xl hover:bg-violet-50 font-bold">▣ Banner Settings</button><button onClick={() => { setAppView('dashboard'); setOpenMenu(null); setTimeout(() => document.getElementById('creative-studios')?.scrollIntoView({ behavior: 'smooth' }), 50); }} className="w-full text-left p-3 rounded-xl hover:bg-blue-50 font-bold">▣ My Posters</button><button onClick={() => { setOpenMenu('transactions'); }} className="w-full text-left p-3 rounded-xl hover:bg-green-50 font-bold">◷ Transaction History</button><button onClick={() => setOpenMenu('notifications')} className="w-full text-left p-3 rounded-xl hover:bg-pink-50 font-bold">♧ Notifications</button><button onClick={openProfileEditor} className="w-full text-left p-3 rounded-xl hover:bg-gray-50 font-bold">⚙ Settings</button><div className="h-px bg-gray-100 my-1" /><button onClick={handleLogout} className="w-full text-left p-3 rounded-xl text-red-600 font-black hover:bg-red-50">↪ Logout</button></div>}
             </div>
             </div>
           </div>
@@ -2192,8 +2519,8 @@ function AarshApp() {
         <div className="max-w-[1500px] mx-auto rounded-[20px] md:rounded-[24px] border border-white/90 bg-white/78 backdrop-blur-2xl shadow-[0_10px_35px_rgba(65,70,170,.12)] overflow-x-auto">
           <nav className="min-w-max flex items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-2">
             <button type="button" onClick={() => { setAppView('dashboard'); setOpenMenu(null); }} className={`flex items-center gap-2 px-4 md:px-7 py-2.5 md:py-3 rounded-2xl text-xs md:text-sm font-black transition whitespace-nowrap ${appView === 'dashboard' ? 'bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-600 text-white shadow-[0_8px_24px_rgba(130,55,220,.25)]' : 'text-[#102967] hover:bg-white/80'}`}>⌂ <span>Dashboard</span></button>
-            <button type="button" onClick={() => { setStep(1); setAppView('poster'); setOpenMenu(null); }} className="flex items-center gap-2 px-4 md:px-7 py-2.5 md:py-3 rounded-2xl text-xs md:text-sm font-black text-[#102967] hover:bg-white/80 transition whitespace-nowrap">▧ <span>Templates</span></button>
-            <button type="button" onClick={() => { setStep(1); setAppView('poster'); setOpenMenu(null); }} className="flex items-center gap-2 px-4 md:px-7 py-2.5 md:py-3 rounded-2xl text-xs md:text-sm font-black text-[#102967] hover:bg-white/80 transition whitespace-nowrap">✣ <span>Create</span></button>
+            <button type="button" onClick={() => openCreativeStudio(false)} className="flex items-center gap-2 px-4 md:px-7 py-2.5 md:py-3 rounded-2xl text-xs md:text-sm font-black text-[#102967] hover:bg-white/80 transition whitespace-nowrap">▧ <span>Templates</span></button>
+            <button type="button" onClick={() => openCreativeStudio(false)} className="flex items-center gap-2 px-4 md:px-7 py-2.5 md:py-3 rounded-2xl text-xs md:text-sm font-black text-[#102967] hover:bg-white/80 transition whitespace-nowrap">✣ <span>Create Image</span></button>
             <button type="button" onClick={() => { setAppView('dashboard'); setOpenMenu(null); setTimeout(() => document.getElementById('creative-studios')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl text-xs md:text-sm font-black text-[#102967] hover:bg-white/80 transition whitespace-nowrap">✦ <span>Studios</span></button>
             <button type="button" onClick={() => { setShowRechargeModal(true); setOpenMenu(null); }} className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl text-xs md:text-sm font-black text-[#102967] hover:bg-white/80 transition whitespace-nowrap">₹ <span>Pricing</span></button>
             <button type="button" onClick={() => { setShowRechargeModal(true); setOpenMenu(null); }} className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl text-xs md:text-sm font-black text-[#102967] hover:bg-white/80 transition whitespace-nowrap">🎁 <span>Offers</span></button>
@@ -2215,7 +2542,7 @@ function AarshApp() {
                 <h2 className="text-xl md:text-2xl font-bold text-[#2f4a8d] mt-3">One Platform. Endless Possibilities.</h2>
                 <p className="text-sm md:text-base lg:text-lg text-[#566ba0] max-w-xl mt-2 leading-relaxed">Create stunning posters, videos, banners, visiting cards and more with the power of AI. Simple. Fast. Beautiful.</p>
                 <div className="flex flex-wrap gap-2 mt-5"><span className="px-4 py-2 rounded-full bg-pink-100/90 text-pink-600 font-black text-sm">♕ 18 Ranks</span><span className="px-4 py-2 rounded-full bg-blue-100/90 text-blue-700 font-black text-sm">▧ 172 Templates</span><span className="px-4 py-2 rounded-full bg-emerald-100/90 text-emerald-600 font-black text-sm">🎨 9 Background Styles</span></div>
-                <button type="button" onClick={() => { setStep(1); setAppView('poster'); }} className="mt-6 px-9 py-4 rounded-2xl text-white text-lg font-black bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-500 shadow-[0_0_32px_rgba(170,40,255,.38)] hover:scale-[1.02] transition">✣ Start Creating <span className="ml-2">→</span></button>
+                <button type="button" onClick={() => openCreativeStudio(false)} className="mt-6 px-9 py-4 rounded-2xl text-white text-lg font-black bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-500 shadow-[0_0_32px_rgba(170,40,255,.38)] hover:scale-[1.02] transition">✣ Start Creating <span className="ml-2">→</span></button>
               </div>
               <div className="hidden md:flex justify-center items-center relative h-full">
                 <div className="absolute top-2 right-8 text-4xl md:text-6xl font-light italic text-[#102967] rotate-[-8deg] leading-[.8]">Design<br/><span className="ml-8">Inspire</span><br/><span className="ml-16 text-fuchsia-600">Grow</span><br/><span className="ml-6">Together</span></div>
@@ -2266,7 +2593,7 @@ function AarshApp() {
               <div className="flex items-start gap-3"><div className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-fuchsia-300 via-purple-300 to-cyan-300 flex items-center justify-center text-3xl shadow-md">{studio.icon}</div><div className="min-w-0"><h3 className="font-black text-[#102967] text-[16px] leading-tight">{studio.name}</h3><span className={`inline-block mt-2 px-3 py-1 rounded-full text-[9px] font-black ${studio.live?'bg-emerald-100 text-emerald-600':'bg-orange-100 text-orange-600'}`}>{studio.live?'● LIVE':'⚙ Coming Soon'}</span></div></div>
               <p className="text-[12px] text-[#62739e] mt-4 leading-relaxed">{studio.desc}</p>
               {studio.details && <div className="text-[10px] font-bold text-[#1f4c9d] mt-2 leading-5">• 172 Templates &nbsp; • 18 Ranks<br/>• 9 Background Styles</div>}
-              <button type="button" onClick={() => studio.live ? (setStep(1),setAppView('poster')) : alert(`${studio.name} is currently under maintenance / coming soon.`)} className={`mt-auto w-full py-3 rounded-2xl font-black text-sm transition ${studio.live?'text-white bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-500 shadow-lg group-hover:shadow-[0_0_24px_rgba(190,40,240,.30)]':'bg-slate-300/80 text-[#18346f]'}`}>{studio.live?'✣ Start Creating  →':'⚙ Under Maintenance'}</button>
+              <button type="button" onClick={() => studio.live ? openCreativeStudio(false) : alert(`${studio.name} is currently under maintenance / coming soon.`)} className={`mt-auto w-full py-3 rounded-2xl font-black text-sm transition ${studio.live?'text-white bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-500 shadow-lg group-hover:shadow-[0_0_24px_rgba(190,40,240,.30)]':'bg-slate-300/80 text-[#18346f]'}`}>{studio.live?'✣ Start Creating  →':'⚙ Under Maintenance'}</button>
             </div>)}
           </section>
 
@@ -2274,11 +2601,55 @@ function AarshApp() {
           <section className="mt-4 rounded-[24px] bg-white/80 border border-white shadow-lg p-5 grid md:grid-cols-4 gap-4 items-center"><div className="flex items-center gap-3"><span className="text-3xl">⚡</span><div><b className="text-[#102967]">Easy to Use</b><p className="text-xs text-gray-500">No design skills required</p></div></div><div className="flex items-center gap-3"><span className="text-3xl">💎</span><div><b className="text-[#102967]">Professional Quality</b><p className="text-xs text-gray-500">Create like a pro</p></div></div><div className="flex items-center gap-3"><span className="text-3xl">◷</span><div><b className="text-[#102967]">Save Time</b><p className="text-xs text-gray-500">Get results in seconds</p></div></div><div className="text-center text-xl md:text-2xl italic font-semibold text-[#172f76]">Create · Innovate · Grow</div></section>
 
         </main>
+      ) : appView === "profile" ? (
+        <main className="aarsh-profile-page max-w-[1200px] mx-auto px-3 md:px-5 pb-12">
+          <section className="rounded-[30px] bg-white/82 border border-white shadow-xl p-5 md:p-8 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div><div className="text-[10px] font-black tracking-[.22em] text-fuchsia-600">AARSH DIGITAL • MY PROFILE</div><h1 className="text-3xl md:text-4xl font-black text-[#102965] mt-1">My Profile</h1><p className="text-sm text-[#63749e] mt-1">Manage your creator profile, languages and personal preferences.</p></div>
+              <div className="flex gap-2"><button onClick={() => { setCreativeSettingsRequested(true); setAppView('creative'); }} className="px-4 py-3 rounded-2xl bg-white border border-purple-100 text-[#102965] font-black shadow-sm">▣ Banner Settings</button><button onClick={() => setAppView('dashboard')} className="px-4 py-3 rounded-2xl bg-[#102965] text-white font-black">← Dashboard</button></div>
+            </div>
+          </section>
+
+          <section className="rounded-[30px] bg-gradient-to-br from-white via-[#fbf8ff] to-[#eef7ff] border border-white shadow-xl p-5 md:p-8">
+            <div className="mb-7"><h2 className="text-xl md:text-2xl font-black text-[#102965]">Profile Images</h2><p className="text-xs text-[#63749e] mt-1">Upload up to 15 images. <b className="text-fuchsia-600">Background will be removed automatically</b> using Aarsh Digital’s high-quality AI cutout engine.</p>{profileBgRemoving && <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-fuchsia-50 via-purple-50 to-blue-50 border border-purple-100 text-xs font-black text-[#5b35b8]"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-500 animate-pulse"></span> Removing backgrounds… {profileBgProgress.done}/{profileBgProgress.total}</div>}</div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+              {profileForm.profileImages.map((src,i)=><div key={`${i}-${src.slice(0,18)}`} className="relative aspect-square rounded-2xl overflow-hidden bg-white border border-purple-100 shadow-sm group"><img src={src} alt={`Profile ${i+1}`} className="w-full h-full object-cover"/><button type="button" onClick={() => removeProfileImage(i)} className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-red-500 text-white font-black shadow-lg">×</button><span className="absolute bottom-1.5 left-1.5 px-2 py-1 rounded-full bg-black/55 text-white text-[9px] font-black">{i+1}</span></div>)}
+              {profileForm.profileImages.length < 15 && <label className={`aspect-square rounded-2xl border-2 border-dashed border-purple-200 bg-white/70 flex flex-col items-center justify-center transition ${profileBgRemoving ? 'opacity-60 cursor-wait' : 'cursor-pointer hover:bg-purple-50'}`}><span className="text-3xl text-purple-500">{profileBgRemoving ? '✦' : '+'}</span><span className="text-[10px] font-black text-[#53699e] mt-1">{profileBgRemoving ? 'PROCESSING…' : 'ADD IMAGE'}</span><input type="file" accept="image/*" multiple disabled={profileBgRemoving} className="hidden" onChange={e => { addProfileImages(e.target.files); e.target.value=''; }}/></label>}
+            </div>
+
+            <div className="mt-8"><h2 className="text-xl md:text-2xl font-black text-[#102965] mb-4">Personal Details</h2><div className="grid md:grid-cols-2 gap-4">
+              <div className="md:col-span-2"><label className="text-xs font-black text-[#40548b]">Name</label><div className="grid grid-cols-1 sm:grid-cols-[150px_1fr_1fr] gap-3 mt-1"><select value={profileForm.title} onChange={e=>setProfileForm(p=>({...p,title:e.target.value}))} className="p-3 rounded-2xl border border-slate-200 bg-white outline-none"><option>Mr.</option><option>Mrs.</option><option>Miss.</option><option>Dr.</option></select><input value={profileForm.firstName} onChange={e=>setProfileForm(p=>({...p,firstName:e.target.value}))} placeholder="First Name" className="p-3 rounded-2xl border border-slate-200 bg-white outline-none"/><input value={profileForm.lastName} onChange={e=>setProfileForm(p=>({...p,lastName:e.target.value}))} placeholder="Last Name" className="p-3 rounded-2xl border border-slate-200 bg-white outline-none"/></div></div>
+              <label><span className="text-xs font-black text-[#40548b]">Mobile Number</span><input value={profileForm.mobile} onChange={e=>setProfileForm(p=>({...p,mobile:e.target.value.startsWith('+91')?e.target.value:'+91 '+e.target.value.replace(/[^0-9 ]/g,'')}))} placeholder="+91 Mobile Number" className="mt-1 w-full p-3 rounded-2xl border border-slate-200 bg-white outline-none"/></label>
+              <label><span className="text-xs font-black text-[#40548b]">WhatsApp Number</span><input value={profileForm.whatsapp} onChange={e=>setProfileForm(p=>({...p,whatsapp:e.target.value.startsWith('+91')?e.target.value:'+91 '+e.target.value.replace(/[^0-9 ]/g,'')}))} placeholder="+91 WhatsApp Number" className="mt-1 w-full p-3 rounded-2xl border border-slate-200 bg-white outline-none"/></label>
+              <label><span className="text-xs font-black text-[#40548b]">Role</span><select value={profileForm.role} onChange={e=>setProfileForm(p=>({...p,role:e.target.value}))} className="mt-1 w-full p-3 rounded-2xl border border-slate-200 bg-white outline-none">{RANKS.map(r=><option key={r}>{r}</option>)}</select></label>
+              <label><span className="text-xs font-black text-[#40548b]">Default Language</span><select value={profileForm.language} onChange={e=>setProfileForm(p=>({...p,language:e.target.value}))} className="mt-1 w-full p-3 rounded-2xl border border-slate-200 bg-white outline-none">{PROFILE_LANGUAGE_OPTIONS.map(l=><option key={l}>{l}</option>)}</select></label>
+              <label><span className="text-xs font-black text-[#40548b]">Gender</span><select value={profileForm.gender} onChange={e=>setProfileForm(p=>({...p,gender:e.target.value}))} className="mt-1 w-full p-3 rounded-2xl border border-slate-200 bg-white outline-none">{PROFILE_GENDER_OPTIONS.map(x=><option key={x}>{x}</option>)}</select></label>
+              <label><span className="text-xs font-black text-[#40548b]">Are You Married?</span><select value={profileForm.married} onChange={e=>setProfileForm(p=>({...p,married:e.target.value}))} className="mt-1 w-full p-3 rounded-2xl border border-slate-200 bg-white outline-none">{PROFILE_MARRIED_OPTIONS.map(x=><option key={x}>{x}</option>)}</select></label>
+            </div></div>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-3"><button onClick={() => setAppView('dashboard')} className="flex-1 p-3 rounded-2xl border border-slate-200 bg-white font-black text-[#102965]">Cancel</button><button disabled={profileSaving} onClick={saveProfile} className="flex-1 p-3 rounded-2xl text-white font-black bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-500 shadow-lg disabled:opacity-60">{profileSaving ? 'Saving...' : 'Save Profile →'}</button></div>
+          </section>
+        </main>
+      ) : appView === "creative" ? (
+      <CreativeStudio
+  initialSettingsOpen={creativeSettingsRequested}
+  profile={profileForm}
+  onBack={() => { setCreativeSettingsRequested(false); setAppView("dashboard"); }}
+/>
       ) : (
         <>
+      {/* CUSTOMER STEP PROGRESS */}
+      <div className="aarsh-customer-stepper max-w-[1400px] mx-auto px-2 md:px-4 mb-3">
+        {[['1','Select Template'],['2','Leader Details'],['3','Achiever Details'],['4','Download']].map(([n,label]) => (
+          <button key={n} type="button" onClick={() => Number(n) < step ? setStep(Number(n)) : null} className={Number(n) === step ? 'active' : Number(n) < step ? 'done' : ''}>
+            <span>{n}</span><b>{label}</b>
+          </button>
+        ))}
+      </div>
+
       {/* MAIN GRID */}
 
-      <div className={`aarsh-main-grid max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 px-2 md:px-4 pb-10 mt-0 ${step === 1 ? 'aarsh-step1-grid' : ''} ${step === 3 ? 'aarsh-step3-grid' : ''}`}> 
+      <div className={`aarsh-main-grid max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 px-2 md:px-4 pb-10 mt-0 ${step === 1 ? 'aarsh-step1-grid' : ''} ${step === 4 ? 'aarsh-step3-grid' : ''}`}> 
 
         <div className={step === 1 ? "aarsh-step1-host" : "bg-white/90 backdrop-blur p-4 md:p-6 rounded-[22px] border border-white shadow-xl order-2 lg:order-1 aarsh-editor-panel"}>
 
@@ -2302,7 +2673,7 @@ function AarshApp() {
     </span>
   </div>
 
-  <b className="aarsh-step1-badge">1/3</b>
+  <b className="aarsh-step1-badge">1/4</b>
 </div>
 
                 <label className="aarsh-step1-label">Select Rank</label>
@@ -2311,7 +2682,7 @@ function AarshApp() {
                 </select>
 
                 <div className="aarsh-step1-template-head">
-                  <p>Template Variants (1-15)</p>
+                  <p>Template Variants (1-32)</p>
                   <span>SELECTED: T-{tpl}</span>
                 </div>
                 <div className="aarsh-step1-template-grid">
@@ -2331,7 +2702,7 @@ function AarshApp() {
                   <div className="aarsh-step1-tip-icon">💡</div>
                   <div><b>Each design is crafted to make your achievers feel special!</b><span>Select a template and click proceed to continue.</span></div>
                 </div>
-                <button type="button" onClick={() => setStep(2)} className="aarsh-step1-proceed">Proceed to Next Step <span>→</span></button>
+                <button type="button" onClick={() => setStep(2)} className="aarsh-step1-proceed">Next: Leader Details <span>→</span></button>
               </section>
 
               <section className="aarsh-step1-middle">
@@ -2350,380 +2721,279 @@ function AarshApp() {
                   <div><span>♙</span><b>Best For</b><strong>{rank.split(':')[1]?.trim() || rank}</strong></div>
                 </div>
                 <div className="aarsh-more-rank-card">
-                  <div className="aarsh-more-rank-head"><h4>Explore Variants</h4><em>15</em></div>
-                  <div className="aarsh-more-thumbs">
-                    <button type="button" onClick={() => setStep1ThumbStart(Math.max(0, step1ThumbStart-3))}>‹</button>
-                    {[0,1,2,3].map(offset => {
-                      const i = Math.min(15, step1ThumbStart + offset + 1);
-                      return <button key={i} type="button" className={tpl === i ? 'is-selected' : ''} onClick={() => handleTemplate(i)}><img src={`${CLOUDINARY_BASE}/${getRankSlug(rank)}_${i}.png?v=20260915`} alt={`T-${i}`} crossOrigin="anonymous" onError={e => { e.currentTarget.style.opacity='0.25'; }}/></button>;
-                    })}
-                    <button type="button" onClick={() => setStep1ThumbStart(Math.min(12, step1ThumbStart+3))}>›</button>
-                  </div>
-                  <div className="aarsh-thumb-dots">{[0,3,6,9,12].map(n => <span key={n} className={step1ThumbStart === n ? 'active' : ''} onClick={() => setStep1ThumbStart(n)} />)}</div>
-                </div>
+  <div className="aarsh-more-rank-head">
+    <h4>Explore Variants</h4>
+    <em>32</em>
+  </div>
+
+  <div className="aarsh-more-thumbs">
+    <button
+      type="button"
+      onClick={() => setStep1ThumbStart(Math.max(0, step1ThumbStart - 3))}
+    >
+      ‹
+    </button>
+
+    {[0, 1, 2, 3].map(offset => {
+      const i = Math.min(32, step1ThumbStart + offset + 1);
+
+      return (
+        <button
+          key={i}
+          type="button"
+          className={tpl === i ? 'is-selected' : ''}
+          onClick={() => handleTemplate(i)}
+        >
+          <img
+            src={`${CLOUDINARY_BASE}/${String(i).padStart(2, '0')}.png?v=20260928`}
+            alt={`T-${i}`}
+            crossOrigin="anonymous"
+            onError={e => {
+              e.currentTarget.style.opacity = '0.25';
+            }}
+          />
+        </button>
+      );
+    })}
+
+    <button
+      type="button"
+      onClick={() => setStep1ThumbStart(Math.min(28, step1ThumbStart + 3))}
+    >
+      ›
+    </button>
+  </div>
+
+  <div className="aarsh-thumb-dots">
+    {[0,3,6,9,12,15,18,21,24,27,28].map(n => (
+      <span
+        key={n}
+        className={step1ThumbStart === n ? 'active' : ''}
+        onClick={() => setStep1ThumbStart(n)}
+      />
+    ))}
+  </div>
+</div>
               </section>
             </>
           )}
 
-          {/* STEP 2 */}
-
+          {/* STEP 2 — LEADER DETAILS */}
           {step === 2 && (
-
-            <>
-
+            <section className="aarsh-customer-step-card aarsh-reference-step">
               <div className="aarsh-step2-title-row">
-                <div className="aarsh-step2-title-icon">▤</div>
-                <div><p>STEP 2</p><h2>Form Entry</h2><span>Fill in the details to personalize your poster</span></div>
-                <span className="aarsh-step2-sparkle">✦</span>
+                <div className="aarsh-step2-title-icon">👤</div>
+                <div><p>STEP 2</p><h2>Leader Details</h2><span>Enter leader information and fine-tune the poster.</span></div>
+                <b className="aarsh-step1-badge">2/4</b>
               </div>
 
-              {/* LEADER */}
-
-              <h3 className="font-black text-xl mt-3 mb-3 tracking-wide bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">
-                ✦ Leader Information
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-[100px_1fr_1fr] gap-2 mb-2">
-
-                <select
-                  value={lPre}
-                  onChange={e =>
-                    setLPre(e.target.value)
-                  }
-                  className="border border-gray-200 p-3 rounded-xl bg-white outline-none"
-                >
-
-                  <option value="Mr.">
-                    Mr.
-                  </option>
-
-                  <option value="Mrs.">
-                    Mrs.
-                  </option>
-
-                  <option value="Miss">
-                    Miss
-                  </option>
-
-                  <option value="Dr.">
-                    Dr.
-                  </option>
-
-                </select>
-
-                <input
-                  placeholder="First Name *"
-                  value={lF}
-                  onChange={e => {
-
-                    setLF(e.target.value);
-
-                    setErrors(p => ({
-                      ...p,
-                      lF: false
-                    }));
-
-                  }}
-                  className={inputClass(errors.lF)}
-                />
-
-                <input
-                  placeholder="Last Name *"
-                  value={lL}
-                  onChange={e => {
-
-                    setLL(e.target.value);
-
-                    setErrors(p => ({
-                      ...p,
-                      lL: false
-                    }));
-
-                  }}
-                  className={inputClass(errors.lL)}
-                />
-
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_80px] gap-2 mb-2 items-center">
-
-                <input
-                  placeholder="City *"
-                  value={lCity}
-                  onChange={e => {
-
-                    setLCity(e.target.value);
-
-                    setErrors(p => ({
-                      ...p,
-                      lCity: false
-                    }));
-
-                  }}
-                  className={inputClass(errors.lCity)}
-                />
-
-                <div className="flex flex-col items-center">
-
-                  <span className="text-[10px] font-bold text-gray-500 mb-1">
-                    Color
-                  </span>
-
-                  <input
-                    type="color"
-                    value={lTextColor}
-                    onChange={e =>
-                      setLTextColor(e.target.value)
-                    }
-                    className="w-12 h-9 rounded-lg cursor-pointer border-0 p-0"
-                  />
-
+              <div className="aarsh-customer-form-section aarsh-leader-info-card">
+                <h3>✦ Leader Information</h3>
+                <div className="aarsh-leader-info-grid">
+                  <select value={lPre} onChange={e => setLPre(e.target.value)} className="border border-gray-200 p-3 rounded-xl bg-white outline-none">
+                    <option>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option>
+                  </select>
+                  <input placeholder="First Name *" value={lF} onChange={e => { setLF(e.target.value); setErrors(p => ({...p,lF:false})); }} className={inputClass(errors.lF)} />
+                  <input placeholder="Last Name *" value={lL} onChange={e => { setLL(e.target.value); setErrors(p => ({...p,lL:false})); }} className={inputClass(errors.lL)} />
+                  <label className={`aarsh-leader-upload ${errors.lPhoto ? 'has-error' : ''}`}>
+                    <span className="aarsh-upload-cloud">☁</span>
+                    <strong>{lPhoto ? 'Leader Image Ready' : 'Upload Leader Image'}</strong>
+                    <small>(Upper Circle)</small><small>PNG / JPG</small>
+                    <input type="file" hidden onChange={onLeaderPhoto} accept="image/*"  />
+                  </label>
+                  <input placeholder="City *" value={lCity} onChange={e => { setLCity(e.target.value); setErrors(p => ({...p,lCity:false})); }} className={`${inputClass(errors.lCity)} aarsh-leader-city-input`} />
                 </div>
-
+                {lPhoto && <PhotoStylePicker selected={lStyle} onSelect={setLStyle} onRemoveBackground={removeLeaderBackground} bgReady={!!lRemovedPhoto} bgLoading={lPhotoLoading} role="leader" />}
               </div>
 
-              <label className={labelClass(errors.lPhoto)}>
-
-                {lPhotoLoading
-                  ? "⏳ Preparing AI background styles..."
-                  : lPhoto
-                    ? "✅ Leader Image Ready — Click to Change"
-                    : "☁️ Upload Leader Image (Upper Circle) *"}
-
-                <input
-                  type="file"
-                  hidden
-                  onChange={onLeaderPhoto}
-                  accept="image/*"
-                  disabled={lPhotoLoading}
-                />
-
-              </label>
-
-              {lPhoto && (
-                <PhotoStylePicker
-                  selected={lStyle}
-                  onSelect={setLStyle}
-                  disabled={lPhotoLoading}
-                  bgReady={!!lRemovedPhoto}
-                  role="leader"
-                />
-              )}
-
-              {/* ACHIEVER */}
-
-              <h3 className="font-black text-xl mb-3 tracking-wide bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">
-                ✦ Achiever Information
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-[100px_1fr_1fr] gap-2 mb-2">
-
-                <select
-                  value={aPre}
-                  onChange={e =>
-                    setAPre(e.target.value)
-                  }
-                  className="border border-gray-200 p-3 rounded-xl bg-white outline-none"
-                >
-
-                  <option value="Mr.">
-                    Mr.
-                  </option>
-
-                  <option value="Mrs.">
-                    Mrs.
-                  </option>
-
-                  <option value="Miss">
-                    Miss
-                  </option>
-
-                  <option value="Dr.">
-                    Dr.
-                  </option>
-
-                </select>
-
-                <input
-                  placeholder="First Name *"
-                  value={aF}
-                  onChange={e => {
-
-                    setAF(e.target.value);
-
-                    setErrors(p => ({
-                      ...p,
-                      aF: false
-                    }));
-
-                  }}
-                  className={inputClass(errors.aF)}
-                />
-
-                <input
-                  placeholder="Last Name *"
-                  value={aL}
-                  onChange={e => {
-
-                    setAL(e.target.value);
-
-                    setErrors(p => ({
-                      ...p,
-                      aL: false
-                    }));
-
-                  }}
-                  className={inputClass(errors.aL)}
-                />
-
-              </div>
-
-              <div className="grid grid-cols-[90px_1fr] gap-2 mb-2">
-
-                <div className="border border-gray-200 p-3 rounded-xl bg-gray-100 font-black text-center outline-none">
-                  AWPL,
+              <div className="aarsh-customer-controls-card aarsh-final-style-card aarsh-text-settings-card">
+                <div className="aarsh-reference-section-head"><div><b>✦ Text Settings</b><span>Customize font, size and style for leader name and city.</span></div><div className="aarsh-linked-head"><span>Size stays attached: Name = City + 1px</span><span className="aarsh-link-icon">↗</span></div></div>
+                <div className="aarsh-reference-style-row">
+                  <strong>Leader Name</strong>
+                  <select value={TEXT_COORDS.leaderNameBox.style?.font || TEXT_COORDS.leaderNameBox.font} onChange={e => patchCustomerTextStyle('leaderNameBox',{font:e.target.value})} aria-label="Leader name font">
+                    {CUSTOMER_FONT_OPTIONS.map(([name,value]) => <option key={name} value={value}>{name}</option>)}
+                  </select>
+                  <button type="button" onClick={() => adjustPairedTextSize('leaderNameBox','leaderCityBox',-1,10,9)}>−</button>
+                  <b className="aarsh-size-value">{Math.max(10, Math.round(TEXT_COORDS.leaderNameBox.style?.fontSize ?? TEXT_COORDS.leaderNameBox.size))} px</b>
+                  <button type="button" onClick={() => adjustPairedTextSize('leaderNameBox','leaderCityBox',1,10,9)}>+</button>
+                  <button type="button" className={TEXT_COORDS.leaderNameBox.style?.weight >= 700 ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('leaderNameBox',{weight:TEXT_COORDS.leaderNameBox.style?.weight >= 700 ? 400 : 800})}>B</button>
+                  <button type="button" className={TEXT_COORDS.leaderNameBox.style?.italic ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('leaderNameBox',{italic:!TEXT_COORDS.leaderNameBox.style?.italic})}><i>I</i></button>
+                  <button type="button" className={TEXT_COORDS.leaderNameBox.style?.underline ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('leaderNameBox',{underline:!TEXT_COORDS.leaderNameBox.style?.underline})}><u>U</u></button>
+                  <input type="color" value={TEXT_COORDS.leaderNameBox.style?.fillColor || lTextColor} onChange={e => { setLTextColor(e.target.value); patchCustomerTextStyle('leaderNameBox',{fillColor:e.target.value,fillMode:'solid'}); }} aria-label="Leader name color" />
+                  <button type="button" className={TEXT_COORDS.leaderNameBox.style?.textAlign === 'left' ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('leaderNameBox',{textAlign:'left'})}>≡</button>
                 </div>
-
-                <select
-                  value={aRank}
-                  onChange={e => {
-                    setARank(e.target.value);
-                    if (e.target.value !== 'Other') setARankOther('');
-                    setErrors(p => ({ ...p, aRankOther: false }));
-                  }}
-                  className="border border-gray-200 p-3 rounded-xl bg-white outline-none font-semibold"
-                  aria-label="Achiever rank"
-                >
-                  {RANKS.map(r => <option key={r} value={r}>{r}</option>)}
-                  <option value="Other">Other</option>
-                </select>
-
-              </div>
-
-              {aRank === 'Other' && (
-                <input
-                  placeholder="Enter your rank *"
-                  value={aRankOther}
-                  onChange={e => {
-                    setARankOther(e.target.value);
-                    setErrors(p => ({ ...p, aRankOther: false }));
-                  }}
-                  className={`${inputClass(errors.aRankOther)} mb-2`}
-                  aria-label="Custom achiever rank"
-                />
-              )}
-
-              {aRank === 'Other' && (
-                <div className="text-xs text-gray-500 mb-2">
-                  Final achiever rank will be: <b>AWPL, {aRankOther || 'Your Rank'}</b>
+                <div className="aarsh-reference-style-row">
+                  <strong>Leader City</strong>
+                  <select value={TEXT_COORDS.leaderCityBox.style?.font || TEXT_COORDS.leaderCityBox.font} onChange={e => patchCustomerTextStyle('leaderCityBox',{font:e.target.value})} aria-label="Leader city font">
+                    {CUSTOMER_FONT_OPTIONS.map(([name,value]) => <option key={name} value={value}>{name}</option>)}
+                  </select>
+                  <b className="aarsh-size-value">{Math.max(9, Math.round(TEXT_COORDS.leaderCityBox.style?.fontSize ?? TEXT_COORDS.leaderCityBox.size))} px</b>
+                  <span className="aarsh-linked-note">Linked</span>
+                  <button type="button" className={TEXT_COORDS.leaderCityBox.style?.weight >= 700 ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('leaderCityBox',{weight:TEXT_COORDS.leaderCityBox.style?.weight >= 700 ? 400 : 800})}>B</button>
+                  <button type="button" className={TEXT_COORDS.leaderCityBox.style?.italic ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('leaderCityBox',{italic:!TEXT_COORDS.leaderCityBox.style?.italic})}><i>I</i></button>
+                  <button type="button" className={TEXT_COORDS.leaderCityBox.style?.underline ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('leaderCityBox',{underline:!TEXT_COORDS.leaderCityBox.style?.underline})}><u>U</u></button>
+                  <input type="color" value={TEXT_COORDS.leaderCityBox.style?.fillColor || lTextColor} onChange={e => { setLTextColor(e.target.value); patchCustomerTextStyle('leaderCityBox',{fillColor:e.target.value,fillMode:'solid'}); }} aria-label="Leader city color" />
+                  <button type="button" className={TEXT_COORDS.leaderCityBox.style?.textAlign === 'left' ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('leaderCityBox',{textAlign:'left'})}>≡</button>
                 </div>
-              )}
-
-              <div className="grid grid-cols-[65px_1fr] gap-2 mb-2">
-
-                <input
-                  value={aPhoneCode}
-                  readOnly
-                  className="border border-gray-200 p-3 rounded-xl bg-gray-100 text-center outline-none"
-                />
-
-                <input
-                  placeholder="Mobile Number *"
-                  value={aPh}
-                  onChange={e => {
-
-                    setAPh(e.target.value);
-
-                    setErrors(p => ({
-                      ...p,
-                      aPh: false
-                    }));
-
-                  }}
-                  className={inputClass(errors.aPh)}
-                />
-
               </div>
 
-              <label className={labelClass(errors.aPhoto)}>
-
-                {aPhotoLoading
-                  ? "⏳ Preparing AI background styles..."
-                  : aPhoto
-                    ? "✅ Achiever Image Ready — Click to Change"
-                    : "☁️ Upload Achiever Image (Lower Circle) *"}
-
-                <input
-                  type="file"
-                  hidden
-                  onChange={onAchieverPhoto}
-                  accept="image/*"
-                  disabled={aPhotoLoading}
-                />
-
-              </label>
-
-              {aPhoto && (
-                <PhotoStylePicker
-                  selected={aStyle}
-                  onSelect={setAStyle}
-                  disabled={aPhotoLoading}
-                  bgReady={!!aRemovedPhoto}
-                  role="achiever"
-                />
-              )}
-
-              <div className="flex items-center justify-between bg-purple-50 p-3 rounded-xl mb-4 border border-purple-100">
-
-                <span className="text-sm font-bold text-purple-900">
-                  Achiever Text Color:
-                </span>
-
-                <input
-                  type="color"
-                  value={aTextColor}
-                  onChange={e =>
-                    setATextColor(e.target.value)
-                  }
-                  className="w-12 h-8 rounded-lg cursor-pointer border-0 p-0"
-                />
-
+              <div className="aarsh-customer-controls-card aarsh-position-card">
+                <div className="aarsh-reference-section-head"><div><b>✦ Position Controls</b><span>Adjust the X, Y position for name, city and photo.</span></div><button type="button" className="aarsh-reset-default" onClick={() => setLayoutConfig(normalizeCustomerLayout(loadCalibration(rank, tpl)))}>↻ &nbsp; Reset to Default</button></div>
+                <div className="aarsh-reference-coordinate-grid">
+                  {[['Name X','leaderNameBox','x'],['Name Y','leaderNameBox','y'],['City X','leaderCityBox','x'],['City Y','leaderCityBox','y'],['Photo X','leaderCircle','x'],['Photo Y','leaderCircle','y']].map(([label,key,axis]) => {
+                    const isPhoto = key === 'leaderCircle';
+                    const value = isPhoto ? PHOTO_COORDS[key][axis] : TEXT_COORDS[key][axis];
+                    return <div key={label}><span>{label}</span><button type="button" className="aarsh-coordinate-stepper aarsh-coordinate-minus" aria-label={`${label} decrease`} title={`${label}: move 1px backward`} onClick={() => isPhoto ? adjustPhotoPosition(key,axis,-1) : adjustTextPosition(key,axis,-1)}>−</button><b className="aarsh-coordinate-value-hidden" aria-hidden="true">{Math.round(value)} px</b><button type="button" className="aarsh-coordinate-stepper aarsh-coordinate-plus" aria-label={`${label} increase`} title={`${label}: move 1px forward`} onClick={() => isPhoto ? adjustPhotoPosition(key,axis,1) : adjustTextPosition(key,axis,1)}>+</button></div>;
+                  })}
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-
-                <button
-                  onClick={() =>
-                    setStep(1)
-                  }
-                  className="border py-3 rounded-xl font-bold"
-                >
-                  ← Back
-                </button>
-
-                <button
-                  onClick={generate}
-                  className="bg-gradient-to-r from-pink-500 to-blue-600 text-white py-3 rounded-xl font-black shadow-lg"
-                >
-                  ✨ Render Canvas (-5)
-                </button>
-
+              <div className="aarsh-customer-controls-card aarsh-extra-effects-card">
+                <div className="aarsh-reference-section-head"><div><b>✦ Extra Text Effects <small>(Both Name &amp; City)</small></b></div></div>
+                <div className="aarsh-effects-row aarsh-effects-colors"><label>Text Color</label><div className="aarsh-swatch-list">{['#5B21B6','#334155','#E5E7EB','#EC4899','#9333EA','#2563EB','#14B8A6','#F59E0B','#F97316','#DC2626'].map(c => <button key={c} type="button" className={TEXT_COORDS.leaderNameBox.style?.fillColor === c ? 'selected' : ''} style={{background:c}} onClick={() => patchPairedLeaderStyle({fillColor:c,fillMode:'solid'})} aria-label={`Text color ${c}`} />)}<input type="color" value={TEXT_COORDS.leaderNameBox.style?.fillColor || lTextColor} onChange={e => { setLTextColor(e.target.value); patchPairedLeaderStyle({fillColor:e.target.value,fillMode:'solid'}); }} aria-label="Custom text color" /></div></div>
+                <div className="aarsh-effects-row"><label>Text Style</label><div className="aarsh-effects-buttons">
+                  <button type="button" className={TEXT_COORDS.leaderNameBox.style?.weight >= 700 ? 'is-on' : ''} onClick={() => patchPairedLeaderStyle({weight:TEXT_COORDS.leaderNameBox.style?.weight >= 700 ? 400 : 800})}>B</button>
+                  <button type="button" className={TEXT_COORDS.leaderNameBox.style?.italic ? 'is-on' : ''} onClick={() => patchPairedLeaderStyle({italic:!TEXT_COORDS.leaderNameBox.style?.italic})}><i>I</i></button>
+                  <button type="button" className={TEXT_COORDS.leaderNameBox.style?.underline ? 'is-on' : ''} onClick={() => patchPairedLeaderStyle({underline:!TEXT_COORDS.leaderNameBox.style?.underline})}><u>U</u></button>
+                  <button type="button" className={TEXT_COORDS.leaderNameBox.style?.strike ? 'is-on' : ''} onClick={() => patchPairedLeaderStyle({strike:!TEXT_COORDS.leaderNameBox.style?.strike})}>S̶</button>
+                </div></div>
+                <div className="aarsh-effects-grid">
+                  <div className="aarsh-effect-control"><label>Text Shadow</label><div><input type="color" value={TEXT_COORDS.leaderNameBox.style?.shadowColor || '#000000'} onChange={e => patchLeaderTextStyle({shadowColor:e.target.value})} aria-label="Leader shadow color" /><button type="button" onClick={() => adjustPairedLeaderStyleNumber('shadowBlur',-1,0,30)}>−</button><b>{Math.round(TEXT_COORDS.leaderNameBox.style?.shadowBlur ?? 0)} px</b><button type="button" onClick={() => adjustPairedLeaderStyleNumber('shadowBlur',1,0,30)}>+</button></div></div>
+                  <div className="aarsh-effect-control"><label>Outline / Stroke</label><div><input type="color" value={TEXT_COORDS.leaderNameBox.style?.strokeColor || '#000000'} onChange={e => patchPairedLeaderStyle({strokeColor:e.target.value})} /><button type="button" onClick={() => adjustPairedLeaderStyleNumber('strokeWidth',-1,0,10)}>−</button><b>{Math.round(TEXT_COORDS.leaderNameBox.style?.strokeWidth ?? 0)} px</b><button type="button" onClick={() => adjustPairedLeaderStyleNumber('strokeWidth',1,0,10)}>+</button></div></div>
+                  <div className="aarsh-effect-control"><label>Text Alignment</label><div><button type="button" onClick={() => patchPairedLeaderStyle({textAlign:'left'})}>←</button><button type="button" className={TEXT_COORDS.leaderNameBox.style?.textAlign === 'center' || !TEXT_COORDS.leaderNameBox.style?.textAlign ? 'is-on' : ''} onClick={() => patchPairedLeaderStyle({textAlign:'center'})}>↔</button><button type="button" onClick={() => patchPairedLeaderStyle({textAlign:'right'})}>→</button></div></div>
+                  <div className="aarsh-effect-control"><label>Letter Spacing</label><div><button type="button" onClick={() => adjustPairedLeaderStyleNumber('letterSpacing',-1,-10,20)}>−</button><b>{Math.round(TEXT_COORDS.leaderNameBox.style?.letterSpacing ?? 0)} px</b><button type="button" onClick={() => adjustPairedLeaderStyleNumber('letterSpacing',1,-10,20)}>+</button></div></div>
+                  <div className="aarsh-effect-control"><label>Line Height</label><div><button type="button" onClick={() => adjustPairedLeaderStyleNumber('lineHeight',-0.1,0.5,3)}>−</button><b>{Number(TEXT_COORDS.leaderNameBox.style?.lineHeight ?? 1).toFixed(1)}</b><button type="button" onClick={() => adjustPairedLeaderStyleNumber('lineHeight',0.1,0.5,3)}>+</button></div></div>
+                  <div className="aarsh-effect-control"><label>Text Transform</label><div><button type="button" className={!TEXT_COORDS.leaderNameBox.style?.textTransform || TEXT_COORDS.leaderNameBox.style?.textTransform === 'none' ? 'is-on' : ''} onClick={() => patchPairedLeaderStyle({textTransform:'none'})}>Aa</button><button type="button" className={TEXT_COORDS.leaderNameBox.style?.textTransform === 'uppercase' ? 'is-on' : ''} onClick={() => patchPairedLeaderStyle({textTransform:'uppercase'})}>AA</button><button type="button" className={TEXT_COORDS.leaderNameBox.style?.textTransform === 'lowercase' ? 'is-on' : ''} onClick={() => patchPairedLeaderStyle({textTransform:'lowercase'})}>aa</button></div></div>
+                </div>
               </div>
 
-            </>
-
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <button type="button" onClick={() => setStep(1)} className="border py-3 rounded-xl font-bold">← Back</button>
+                <button type="button" onClick={() => { if (validateLeader()) setStep(3); }} className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-xl font-black shadow-lg">Next: Achiever Details →</button>
+              </div>
+            </section>
           )}
 
-          {/* STEP 3 */}
-
+          {/* STEP 3 — ACHIEVER DETAILS */}
           {step === 3 && (
+            <section className="aarsh-customer-step-card aarsh-reference-step">
+              <div className="aarsh-step2-title-row">
+                <div className="aarsh-step2-title-icon">🏆</div>
+                <div><p>STEP 3</p><h2>Achiever Details</h2><span>Enter achiever information and fine-tune the poster.</span></div>
+                <b className="aarsh-step1-badge">3/4</b>
+              </div>
+
+              <div className="aarsh-customer-form-section aarsh-leader-info-card">
+                <h3>✦ Achiever Information</h3>
+                <div className="aarsh-leader-info-grid aarsh-achiever-info-grid">
+                  <select value={aPre} onChange={e => setAPre(e.target.value)} className="border border-gray-200 p-3 rounded-xl bg-white outline-none">
+                    <option>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option>
+                  </select>
+                  <input placeholder="First Name *" value={aF} onChange={e => { setAF(e.target.value); setErrors(p => ({...p,aF:false})); }} className={inputClass(errors.aF)} />
+                  <input placeholder="Last Name *" value={aL} onChange={e => { setAL(e.target.value); setErrors(p => ({...p,aL:false})); }} className={inputClass(errors.aL)} />
+                  <label className={`aarsh-leader-upload ${errors.aPhoto ? 'has-error' : ''}`}>
+                    <span className="aarsh-upload-cloud">☁</span>
+                    <strong>{aPhoto ? 'Achiever Image Ready' : 'Upload Achiever Image'}</strong>
+                    <small>(Lower Circle)</small><small>PNG / JPG</small>
+                    <input type="file" hidden onChange={onAchieverPhoto} accept="image/*"  />
+                  </label>
+                  <div className="aarsh-achiever-rank-row">
+                    <div className="border border-gray-200 p-3 rounded-xl bg-gray-100 font-black text-center">AWPL,</div>
+                    <select value={aRank} onChange={e => { setARank(e.target.value); if (e.target.value !== 'Other') setARankOther(''); setErrors(p => ({...p,aRankOther:false})); }} className="border border-gray-200 p-3 rounded-xl bg-white outline-none font-semibold" aria-label="Achiever rank">
+                      {RANKS.map(r => <option key={r} value={r}>{r.split(':')[1]?.trim() || r}</option>)}
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  {aRank === 'Other' && <input placeholder="Enter your rank *" value={aRankOther} onChange={e => { setARankOther(e.target.value); setErrors(p => ({...p,aRankOther:false})); }} className={`${inputClass(errors.aRankOther)} aarsh-custom-rank-input`} aria-label="Custom achiever rank" />}
+                  <div className="aarsh-phone-row"><input value={aPhoneCode} readOnly className="border border-gray-200 p-3 rounded-xl bg-gray-100 text-center" /><input placeholder="Mobile Number *" value={aPh} onChange={e => { setAPh(e.target.value); setErrors(p => ({...p,aPh:false})); }} className={inputClass(errors.aPh)} /></div>
+                </div>
+                {aPhoto && <PhotoStylePicker selected={aStyle} onSelect={setAStyle} onRemoveBackground={removeAchieverBackground} bgReady={!!aRemovedPhoto} bgLoading={aPhotoLoading} role="achiever" />}
+              </div>
+
+              <div className="aarsh-customer-controls-card aarsh-final-style-card aarsh-text-settings-card">
+                <div className="aarsh-reference-section-head"><div><b>✦ Text Settings</b><span>Customize font and style for achiever text.</span></div></div>
+                <div className="aarsh-reference-style-row aarsh-achiever-style-row">
+                  <strong>Achiever Name</strong>
+                  <select value={TEXT_COORDS.achieverNameBox.style?.font || TEXT_COORDS.achieverNameBox.font} onChange={e => patchCustomerTextStyle('achieverNameBox',{font:e.target.value})} aria-label="Achiever name font">
+                    {CUSTOMER_FONT_OPTIONS.map(([name,value]) => <option key={name} value={value}>{name}</option>)}
+                  </select>
+                  <button type="button" className="aarsh-size-step" onClick={() => adjustAchieverTextSize('achieverNameBox',-1)} aria-label="Decrease achiever name size">−</button>
+                  <b className="aarsh-size-value">{Math.round(Number(TEXT_COORDS.achieverNameBox.style?.fontSize ?? TEXT_COORDS.achieverNameBox.size ?? 10))} px</b>
+                  <button type="button" className="aarsh-size-step" onClick={() => adjustAchieverTextSize('achieverNameBox',1)} aria-label="Increase achiever name size">+</button>
+                  <button type="button" className={TEXT_COORDS.achieverNameBox.style?.weight >= 700 ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('achieverNameBox',{weight:TEXT_COORDS.achieverNameBox.style?.weight >= 700 ? 400 : 800})}>B</button>
+                  <button type="button" className={TEXT_COORDS.achieverNameBox.style?.italic ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('achieverNameBox',{italic:!TEXT_COORDS.achieverNameBox.style?.italic})}><i>I</i></button>
+                  <button type="button" className={TEXT_COORDS.achieverNameBox.style?.underline ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('achieverNameBox',{underline:!TEXT_COORDS.achieverNameBox.style?.underline})}><u>U</u></button>
+                  <input type="color" value={TEXT_COORDS.achieverNameBox.style?.fillColor || aTextColor} onChange={e => { setATextColor(e.target.value); patchCustomerTextStyle('achieverNameBox',{fillColor:e.target.value,fillMode:'solid'}); }} aria-label="Achiever name color" />
+                  <button type="button" className={TEXT_COORDS.achieverNameBox.style?.textAlign === 'left' ? 'is-on' : ''} onClick={() => patchCustomerTextStyle('achieverNameBox',{textAlign:'left'})}>≡</button>
+                </div>
+                {['achieverRankBox','phoneBox'].map((key) => {
+                  const label = key === 'achieverRankBox' ? `AWPL, ${aRank === 'Other' ? (aRankOther || 'Your Rank') : (aRank.split(':')[1]?.trim() || aRank)}` : 'Phone Number';
+                  const size = key === 'achieverRankBox' ? 13 : 14;
+                  const style = TEXT_COORDS[key].style || {};
+                  return (
+                    <div className="aarsh-reference-style-row aarsh-achiever-style-row" key={key}>
+                      <strong>{label}</strong>
+                      <select value={style.font || TEXT_COORDS[key].font} onChange={e => patchCustomerTextStyle(key,{font:e.target.value})} aria-label={`${label} font`}>
+                        {CUSTOMER_FONT_OPTIONS.map(([name,value]) => <option key={name} value={value}>{name}</option>)}
+                      </select>
+                      <button type="button" className="aarsh-size-step" onClick={() => adjustAchieverTextSize(key,-1)} aria-label={`Decrease ${label} size`}>−</button>
+                      <b className="aarsh-size-value">{Math.round(Number(style.fontSize ?? TEXT_COORDS[key].size ?? size))} px</b>
+                      <button type="button" className="aarsh-size-step" onClick={() => adjustAchieverTextSize(key,1)} aria-label={`Increase ${label} size`}>+</button>
+                      <button type="button" className={style.weight >= 700 ? 'is-on' : ''} onClick={() => patchCustomerTextStyle(key,{weight:style.weight >= 700 ? 400 : 800})}>B</button>
+                      <button type="button" className={style.italic ? 'is-on' : ''} onClick={() => patchCustomerTextStyle(key,{italic:!style.italic})}><i>I</i></button>
+                      <button type="button" className={style.underline ? 'is-on' : ''} onClick={() => patchCustomerTextStyle(key,{underline:!style.underline})}><u>U</u></button>
+                      <input type="color" value={style.fillColor || aTextColor} onChange={e => { setATextColor(e.target.value); patchCustomerTextStyle(key,{fillColor:e.target.value,fillMode:'solid'}); }} aria-label={`${label} color`} />
+                      <button type="button" className={style.textAlign === 'left' ? 'is-on' : ''} onClick={() => patchCustomerTextStyle(key,{textAlign:'left'})}>≡</button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="aarsh-customer-controls-card aarsh-position-card">
+                <div className="aarsh-reference-section-head"><div><b>✦ Position Controls</b><span>Adjust the X, Y position for name, rank, phone and photo.</span></div><button type="button" className="aarsh-reset-default" onClick={() => setLayoutConfig(normalizeCustomerLayout(loadCalibration(rank, tpl)))}>↻ &nbsp; Reset to Default</button></div>
+                <div className="aarsh-reference-coordinate-grid aarsh-achiever-position-grid">
+                  {[['Name X','achieverNameBox','x'],['Name Y','achieverNameBox','y'],['Rank X','achieverRankBox','x'],['Rank Y','achieverRankBox','y'],['Phone X','phoneBox','x'],['Phone Y','phoneBox','y'],['Photo X','achieverCircle','x'],['Photo Y','achieverCircle','y']].map(([label,key,axis]) => {
+                    const isPhoto = key === 'achieverCircle';
+                    const value = isPhoto ? PHOTO_COORDS[key][axis] : TEXT_COORDS[key][axis];
+                    return <div key={label}><span>{label}</span><button type="button" className="aarsh-coordinate-stepper aarsh-coordinate-minus" aria-label={`${label} decrease`} title={`${label}: move 1px backward`} onClick={() => isPhoto ? adjustPhotoPosition(key,axis,-1) : adjustTextPosition(key,axis,-1)}>−</button><b className="aarsh-coordinate-value-hidden" aria-hidden="true">{Math.round(value)} px</b><button type="button" className="aarsh-coordinate-stepper aarsh-coordinate-plus" aria-label={`${label} increase`} title={`${label}: move 1px forward`} onClick={() => isPhoto ? adjustPhotoPosition(key,axis,1) : adjustTextPosition(key,axis,1)}>+</button></div>;
+                  })}
+                </div>
+              </div>
+
+              <div className="aarsh-customer-controls-card aarsh-extra-effects-card">
+                <div className="aarsh-reference-section-head"><div><b>✦ Extra Text Effects <small>(Achiever Text)</small></b></div></div>
+                <div className="aarsh-effects-row aarsh-effects-colors"><label>Text Color</label><div className="aarsh-swatch-list">{['#5B21B6','#334155','#E5E7EB','#EC4899','#9333EA','#2563EB','#14B8A6','#F59E0B','#F97316','#DC2626'].map(c => <button key={c} type="button" className={TEXT_COORDS.achieverNameBox.style?.fillColor === c ? 'selected' : ''} style={{background:c}} onClick={() => { setATextColor(c); patchAchieverTextStyle({fillColor:c,fillMode:'solid'}); }} aria-label={`Text color ${c}`} />)}<input type="color" value={TEXT_COORDS.achieverNameBox.style?.fillColor || aTextColor} onChange={e => { setATextColor(e.target.value); patchAchieverTextStyle({fillColor:e.target.value,fillMode:'solid'}); }} aria-label="Custom achiever text color" /></div></div>
+                <div className="aarsh-effects-row"><label>Text Style</label><div className="aarsh-effects-buttons">
+                  <button type="button" className={TEXT_COORDS.achieverNameBox.style?.weight >= 700 ? 'is-on' : ''} onClick={() => patchAchieverTextStyle({weight:TEXT_COORDS.achieverNameBox.style?.weight >= 700 ? 400 : 800})}>B</button>
+                  <button type="button" className={TEXT_COORDS.achieverNameBox.style?.italic ? 'is-on' : ''} onClick={() => patchAchieverTextStyle({italic:!TEXT_COORDS.achieverNameBox.style?.italic})}><i>I</i></button>
+                  <button type="button" className={TEXT_COORDS.achieverNameBox.style?.underline ? 'is-on' : ''} onClick={() => patchAchieverTextStyle({underline:!TEXT_COORDS.achieverNameBox.style?.underline})}><u>U</u></button>
+                  <button type="button" className={TEXT_COORDS.achieverNameBox.style?.strike ? 'is-on' : ''} onClick={() => patchAchieverTextStyle({strike:!TEXT_COORDS.achieverNameBox.style?.strike})}>S̶</button>
+                </div></div>
+                <div className="aarsh-effects-grid">
+                  <div className="aarsh-effect-control"><label>Text Shadow</label><div><input type="color" value={TEXT_COORDS.achieverNameBox.style?.shadowColor || '#000000'} onChange={e => patchAchieverTextStyle({shadowColor:e.target.value})} aria-label="Achiever shadow color" /><button type="button" onClick={() => adjustAchieverStyleNumber('shadowBlur',-1,0,30)}>−</button><b>{Math.round(TEXT_COORDS.achieverNameBox.style?.shadowBlur ?? 0)} px</b><button type="button" onClick={() => adjustAchieverStyleNumber('shadowBlur',1,0,30)}>+</button></div></div>
+                  <div className="aarsh-effect-control"><label>Outline / Stroke</label><div><input type="color" value={TEXT_COORDS.achieverNameBox.style?.strokeColor || '#000000'} onChange={e => patchAchieverTextStyle({strokeColor:e.target.value})} /><button type="button" onClick={() => adjustAchieverStyleNumber('strokeWidth',-1,0,10)}>−</button><b>{Math.round(TEXT_COORDS.achieverNameBox.style?.strokeWidth ?? 0)} px</b><button type="button" onClick={() => adjustAchieverStyleNumber('strokeWidth',1,0,10)}>+</button></div></div>
+                  <div className="aarsh-effect-control"><label>Text Alignment</label><div><button type="button" onClick={() => patchAchieverTextStyle({textAlign:'left'})}>←</button><button type="button" className={TEXT_COORDS.achieverNameBox.style?.textAlign === 'center' || !TEXT_COORDS.achieverNameBox.style?.textAlign ? 'is-on' : ''} onClick={() => patchAchieverTextStyle({textAlign:'center'})}>↔</button><button type="button" onClick={() => patchAchieverTextStyle({textAlign:'right'})}>→</button></div></div>
+                  <div className="aarsh-effect-control"><label>Letter Spacing</label><div><button type="button" onClick={() => adjustAchieverStyleNumber('letterSpacing',-1,-10,20)}>−</button><b>{Math.round(TEXT_COORDS.achieverNameBox.style?.letterSpacing ?? 0)} px</b><button type="button" onClick={() => adjustAchieverStyleNumber('letterSpacing',1,-10,20)}>+</button></div></div>
+                  <div className="aarsh-effect-control"><label>Line Height</label><div><button type="button" onClick={() => adjustAchieverStyleNumber('lineHeight',-0.1,0.5,3)}>−</button><b>{Number(TEXT_COORDS.achieverNameBox.style?.lineHeight ?? 1).toFixed(1)}</b><button type="button" onClick={() => adjustAchieverStyleNumber('lineHeight',0.1,0.5,3)}>+</button></div></div>
+                  <div className="aarsh-effect-control"><label>Text Transform</label><div><button type="button" className={!TEXT_COORDS.achieverNameBox.style?.textTransform || TEXT_COORDS.achieverNameBox.style?.textTransform === 'none' ? 'is-on' : ''} onClick={() => patchAchieverTextStyle({textTransform:'none'})}>Aa</button><button type="button" className={TEXT_COORDS.achieverNameBox.style?.textTransform === 'uppercase' ? 'is-on' : ''} onClick={() => patchAchieverTextStyle({textTransform:'uppercase'})}>AA</button><button type="button" className={TEXT_COORDS.achieverNameBox.style?.textTransform === 'lowercase' ? 'is-on' : ''} onClick={() => patchAchieverTextStyle({textTransform:'lowercase'})}>aa</button></div></div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <button type="button" onClick={() => setStep(2)} className="border py-3 rounded-xl font-bold">← Leader Details</button>
+                <button type="button" onClick={generate} className="bg-gradient-to-r from-pink-500 to-blue-600 text-white py-3 rounded-xl font-black shadow-lg">✨ Generate Poster (-5) →</button>
+              </div>
+            </section>
+          )}
+
+          {step === 4 && (
             <div className="aarsh-step3-success-card">
 
               <div className="aarsh-step3-success-icon">✓</div>
 
               <div className="aarsh-step3-title-wrap">
-                <p className="aarsh-step3-kicker">STEP 3 • FINAL OUTPUT</p>
-                <h2>Canvas Render Complete</h2>
+                <p className="aarsh-step3-kicker">STEP 4 • DOWNLOAD</p>
+                <h2>Your Poster is Ready</h2>
                 <span>Your poster is ready. Download it, save it as PDF, or share it.</span>
               </div>
 
@@ -2738,10 +3008,16 @@ function AarshApp() {
 
               <div className="aarsh-step3-actions">
 
-                <button type="button" onClick={download} disabled={isDownloading} className="aarsh-step3-action aarsh-step3-download">
-                  <span>⇩</span>
-                  <div><strong>{isDownloading ? 'Generating...' : 'Download Image'}</strong><small>High Quality (PNG)</small></div>
-                </button>
+                <div className="aarsh-step3-download-group">
+                  <button type="button" onClick={() => downloadImageAtWidth(1080)} disabled={isDownloading} className="aarsh-step3-action aarsh-step3-download">
+                    <span>⇩</span>
+                    <div><strong>{isDownloading ? 'Generating...' : 'Download Image'}</strong><small>Choose PNG size below</small></div>
+                  </button>
+                  <div className="aarsh-download-resolutions" aria-label="Poster download sizes">
+                    {[1080,1460,2160].map(size => <button key={size} type="button" onClick={() => downloadImageAtWidth(size)} disabled={isDownloading}>{size}</button>)}
+                    <button type="button" onClick={() => downloadImageAtWidth(3840)} disabled={isDownloading}>4K</button>
+                  </div>
+                </div>
 
                 <button type="button" onClick={sharePoster} disabled={isDownloading} className="aarsh-step3-action aarsh-step3-share">
                   <span>⌯</span>
@@ -2760,7 +3036,7 @@ function AarshApp() {
 
                 <button type="button" onClick={() => setStep(2)} className="aarsh-step3-action aarsh-step3-edit">
                   <span>↗</span>
-                  <div><strong>Edit Again</strong><small>Make changes</small></div>
+                  <div><strong>Edit Details</strong><small>Make changes</small></div>
                 </button>
 
                 <button type="button" onClick={startNewPoster} className="aarsh-step3-action aarsh-step3-new">
@@ -2799,9 +3075,9 @@ function AarshApp() {
 
         {/* CANVAS PREVIEW */}
 
-        <div className={`bg-white/90 backdrop-blur p-4 md:p-6 rounded-[22px] border border-white shadow-xl h-fit lg:sticky top-3 order-1 lg:order-2 ${step === 1 ? 'aarsh-step1-preview' : ''} ${step === 3 ? 'aarsh-step3-preview-hidden' : ''}`}>
+        <div className={`bg-white/90 backdrop-blur p-4 md:p-6 rounded-[22px] border border-white shadow-xl h-fit lg:sticky top-3 order-1 lg:order-2 ${step !== 4 ? 'aarsh-step1-preview' : ''} ${step === 4 ? 'aarsh-step3-preview-export-source' : ''}`}>
 
-          <div className="aarsh-preview-heading"><div><h2>◉ Real-time Precise Alignment</h2><p>Asset: {getRankSlug(rank)}_{tpl}</p></div>{(step === 1 || step === 2) && <div className="aarsh-preview-tools">
+          <div className="aarsh-preview-heading"><div><h2>◉ Real-time Precise Alignment</h2></div>{(step === 1 || step === 2 || step === 3) && <div className="aarsh-preview-tools">
             <button type="button" onClick={() => setStep1Zoom(z => Math.min(1.25, +(z + .1).toFixed(2)))}>🔍<span>Zoom In</span></button>
             <button type="button" onClick={() => setStep1Zoom(z => Math.max(.75, +(z - .1).toFixed(2)))}>🔎<span>Zoom Out</span></button>
             <button type="button" onClick={() => setStep1Zoom(1)}>↻<span>Reset View</span></button>
@@ -2809,26 +3085,77 @@ function AarshApp() {
             {calibrationMode && <button type="button" onClick={() => setCalibrationOpen(v => !v)} className={calibrationOpen ? 'active' : ''}>⚙<span>Calibrate</span></button>}
           </div>}</div>
 
-          <div className="aarsh-poster-stage" style={{ transform: ((step === 1 || step === 2) && step1Zoom !== 1) ? `scale(${step1Zoom})` : 'none', willChange: ((step === 1 || step === 2) && step1Zoom !== 1) ? 'transform' : 'auto' }}>
+          <div className="aarsh-poster-stage" style={{ transform: ((step === 1 || step === 2 || step === 3) && step1Zoom !== 1) ? `scale(${step1Zoom})` : 'none', willChange: ((step === 1 || step === 2 || step === 3) && step1Zoom !== 1) ? 'transform' : 'auto' }}>
           <div
             ref={posterRef}
             data-poster-canvas="true"
             className="aarsh-poster-shell relative w-full rounded-xl overflow-hidden border shadow bg-white"
             style={{
-              aspectRatio: '1067 / 1600'
+              aspectRatio: referencePosterMode ? '1 / 1' : '1067 / 1600'
             }}
           >
 
-            <img
-              key={posterUrl}
-              src={posterUrl}
-              alt="template frame"
-              className="w-full h-full block"
-              crossOrigin="anonymous"
-              loading="eager"
-              decoding="sync"
-              fetchPriority="high"
-            />
+           <img
+  key={posterUrl}
+  src={posterUrl}
+  alt="template frame"
+  width={referencePosterMode ? 2160 : 1080}
+  height={referencePosterMode ? 2160 : 1080}
+  className="w-full h-full block"
+  crossOrigin="anonymous"
+  loading="eager"
+  decoding="sync"
+  fetchPriority="high"
+  draggable={false}
+  style={{
+    width: '100%',
+    height: '100%',
+    display: 'block',
+    objectFit: 'fill',
+    imageRendering: 'auto',
+    backfaceVisibility: 'hidden',
+    WebkitBackfaceVisibility: 'hidden',
+    transform: 'translateZ(0)'
+  }}
+/>
+
+            {referencePosterMode && (
+              <>
+                {referenceBannerSettings.asclepiasLogo && <img src={referenceBannerSettings.asclepiasLogo} alt="Asclepias" style={referencePhotoStyle(REFERENCE_COORDS.asclepias, {objectFit:'contain', zIndex:20})} />}
+                {REFERENCE_MEMBER_PHOTOS.map(([x,y], i) => referenceBannerSettings.people?.[i]?.url ? (
+                  <img key={`member-${i}`} src={referenceBannerSettings.people[i].url} alt="" style={referencePhotoStyle({x,y,w:54.6,h:54.6}, {width:'3.4125%',height:'3.4125%',borderRadius:'50%',objectFit:'cover',border:'2px solid rgba(255,210,75,.9)',zIndex:20})} />
+                ) : null)}
+                {referenceBannerSettings.fighterLogo && <img src={referenceBannerSettings.fighterLogo} alt="Fighter" style={referencePhotoStyle(REFERENCE_COORDS.fighterLogo, {objectFit:'contain', zIndex:20})} />}
+                {referenceBannerSettings.fighterStudio && <img src={referenceBannerSettings.fighterStudio} alt="Fighter" style={referencePhotoStyle(REFERENCE_COORDS.fighterText, {objectFit:'contain', zIndex:20})} />}
+
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.congratulations,{fontFamily:"cursive",weight:900,color:'#fff1a2',gold:true})}>CONGRATULATIONS!</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.brandNew,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:800,color:'#ffffff'})}>TO OUR BRAND NEW</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.leader,{fontFamily:"'Garat',Arial,sans-serif",weight:950,color:'#ffe36b',gold:true})}>LEADER</div>
+
+                <div style={referencePhotoStyle(REFERENCE_COORDS.leaderPhoto,{zIndex:7})}>
+                  {lPhoto && <img src={lStyle === 2 && lRemovedPhoto ? lRemovedPhoto : lPhoto} alt="Leader" crossOrigin="anonymous" style={{width:'100%',height:'100%',objectFit:'contain',objectPosition:'center bottom',display:'block'}} />}
+                  <div style={{position:'absolute',left:0,right:0,bottom:0,height:'32%',background:'linear-gradient(transparent,rgba(0,0,0,.58))',pointerEvents:'none'}} />
+                </div>
+
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.leaderName,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:950,color:'#ffffff'})}>{lF || lL ? `${lPre} ${lF} ${lL}`.trim().toUpperCase() : ''}</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.leaderCity,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:800,color:'#ffffff'})}>{lCity ? lCity.toUpperCase() : ''}</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.achieved,{fontFamily:"cursive",weight:800,color:'#ffffff'})}>Achieved</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.rank,{fontFamily:"Georgia,serif",weight:950,color:'#ffd34d',gold:true})}>{(rank.split(':')[1] || rank).trim().toUpperCase()}</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.dsRank,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:950,color:'#ffffff'})}>DS RANK</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.incomeLabel,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:900,color:'#ffffff'})}>THIS RANK INCOME QUALIFY</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.amount,{fontFamily:"Georgia,serif",weight:950,color:'#ffd34d',gold:true})}>{RANK_INCOME[(rank.split(':')[1] || rank).trim()] || '₹0'}</div>
+
+                <div style={referencePhotoStyle(REFERENCE_COORDS.achieverPhoto,{zIndex:7})}>
+                  {aPhoto && <img src={aPhoto} alt="Achiever" crossOrigin="anonymous" style={{width:'100%',height:'100%',objectFit:'contain',objectPosition:'center bottom',display:'block'}} />}
+                  <div style={{position:'absolute',left:0,right:0,bottom:0,height:'34%',background:'linear-gradient(transparent,rgba(0,0,0,.62))',pointerEvents:'none'}} />
+                </div>
+
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.achieverName,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:950,color:'#ffffff'})}>{aF || aL ? `${aPre} ${aF} ${aL}`.trim().toUpperCase() : ''}</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.achieverRank,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:900,color:'#ffffff'})}>{(rank.split(':')[1] || rank).trim().toUpperCase()} AWPL</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.success,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:800,color:'#ffffff'})}>FOR SUCCESS CALL ON</div>
+                <div data-poster-text style={referenceTextStyle(REFERENCE_COORDS.phone,{fontFamily:"'CanvaSans',Arial,sans-serif",weight:900,color:'#ffffff'})}>{aPh || ''}</div>
+              </>
+            )}
 
             <CalibrationOverlay
               layout={layoutConfig}
@@ -2836,6 +3163,8 @@ function AarshApp() {
               visible={calibrationOpen && calibrationMode}
             />
 
+            {!referencePosterMode && (
+              <>
             {/* LEADER PHOTO */}
 
             <div
@@ -2931,27 +3260,15 @@ function AarshApp() {
             <div
               style={{
                 position: 'absolute',
-
-                left:
-                  `${(PHOTO_COORDS.achieverCircle.x / 1067) * 100}%`,
-
-                top:
-                  `${(PHOTO_COORDS.achieverCircle.y / 1600) * 100}%`,
-
-                width:
-                  `${(PHOTO_COORDS.achieverCircle.w / 1067) * 100}%`,
-
-                height:
-                  `${(PHOTO_COORDS.achieverCircle.h / 1600) * 100}%`,
-
+                left: `${(PHOTO_COORDS.achieverCircle.x / 1067) * 100}%`,
+                top: `${(PHOTO_COORDS.achieverCircle.y / 1600) * 100}%`,
+                width: `${(PHOTO_COORDS.achieverCircle.w / 1067) * 100}%`,
+                height: `${(PHOTO_COORDS.achieverCircle.h / 1600) * 100}%`,
                 borderRadius: '50%',
-
                 overflow: 'hidden',
-
                 zIndex: 5
               }}
             >
-
               {aPhoto && (
                 <>
                   {getPhotoStyleUrl(aStyle, "achiever") && aRemovedPhoto && (
@@ -2971,19 +3288,17 @@ function AarshApp() {
                     alt="Achiever"
                     crossOrigin="anonymous"
                     style={{
-  position: 'absolute',
-  inset: 0,
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover',
-  objectPosition: 'center center',
-  borderRadius: '50%',
-  zIndex: 2
-}}
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      objectPosition: 'center center',
+                      zIndex: 2
+                    }}
                   />
                 </>
               )}
-
             </div>
 
             {/* ACHIEVER TEXT */}
@@ -3011,7 +3326,7 @@ function AarshApp() {
             >
 
               {(aRank === 'Other' ? aRankOther : aRank)
-                ? `${aCompany}, ${aRank === 'Other' ? aRankOther : aRank}`.toUpperCase()
+                ? `${aCompany}, ${aRank === 'Other' ? aRankOther : (aRank.split(':')[1]?.trim() || aRank)}`.toUpperCase()
                 : ''}
 
             </div>
@@ -3025,12 +3340,15 @@ function AarshApp() {
             >
 
               {aPh
-                ? `${aPhoneCode} ${aPh}`
+                ? aPh
                 : ''}
 
             </div>
 
-          {step === 1 && step1Guides && <div className="aarsh-guide-overlay"><span className="v"/><span className="h"/><i>1067 × 1600</i></div>}
+              </>
+            )}
+
+          {step === 1 && step1Guides && <div className="aarsh-guide-overlay"><span className="v"/><span className="h"/><i>{referencePosterMode ? '1600 × 1600' : '1067 × 1600'}</i></div>}
           </div>
           {step === 1 && <div className="aarsh-step1-preview-note"><span>Preview<br/>Your<br/>Masterpiece</span><b>♕</b><i>↙</i></div>}
           </div>
@@ -3098,7 +3416,7 @@ function AarshApp() {
         </div>
       )}
 
-      {openMenu === 'profileEditor' && (
+      {false && openMenu === 'profileEditor' && (
         <div className="fixed inset-0 z-[95] bg-[#17215a]/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOpenMenu(null)}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[30px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef8ff] border border-white shadow-2xl p-5 md:p-7" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-5">
@@ -3266,7 +3584,7 @@ function CalibrationStandalone() {
   const [saved, setSaved] = useState(false);
   const posterRef = useRef(null);
 
-  const posterUrl = `${CLOUDINARY_BASE}/${getRankSlug(rank)}_${tpl}.png?v=20260915`;
+  const posterUrl = `${CLOUDINARY_BASE}/${String(tpl).padStart(2, '0')}.png?v=20260928`;
 
   useEffect(() => {
     setLayout(loadCalibration(rank, tpl));
@@ -3428,8 +3746,38 @@ function CalibrationStandalone() {
   );
 }
 
+const CUSTOMER_TEXT_DEFAULT_SIZES = {
+  // Step 2/3 baseline intentionally matches the current Step-1 reference values.
+  // The +/- controls can still adjust these values afterward.
+  leaderNameBox: 23,
+  leaderCityBox: 22,
+  achieverNameBox: 20,
+  achieverRankBox: 13,
+  phoneBox: 14
+};
+
+const normalizeCustomerLayout = (layout) => {
+  const base = cloneLayout(1);
+  const merged = {
+    ...base,
+    ...layout,
+    photo: { ...base.photo, ...(layout?.photo || {}) },
+    text: { ...base.text, ...(layout?.text || {}) }
+  };
+  Object.entries(CUSTOMER_TEXT_DEFAULT_SIZES).forEach(([key, size]) => {
+    merged.text[key] = { ...merged.text[key], size };
+    const style = merged.text[key].style || {};
+    merged.text[key].style = { ...style, fontSize: size };
+  });
+  merged.photo = { ...merged.photo, leaderCircle: { ...merged.photo.leaderCircle, y: 247 } };
+  return merged;
+};
+
 export default function App() {
-  const calibrationMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('calibrate') === '1';
+  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const calibrationMode = params?.get('calibrate') === '1';
+  const leaderStyleMode = params?.get('leaderstyle') === '1';
+  if (leaderStyleMode) return <LeaderStyleDemo />;
   return calibrationMode ? <CalibrationStandalone /> : <AarshApp />;
 }
 

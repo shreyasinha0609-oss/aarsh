@@ -706,6 +706,88 @@ def setup_profile():
 
 
 # =========================================================
+# UPDATE PROFILE
+# =========================================================
+
+@app.route("/auth/update-profile", methods=["POST", "OPTIONS"])
+def update_profile():
+    if request.method == "OPTIONS":
+        return ("", 204)
+
+    try:
+        data = request.get_json() or {}
+        decoded = verify_firebase_token(data.get("idToken"))
+        uid = decoded["uid"]
+
+        username = normalize_username(data.get("username"))
+        email = str(data.get("email") or "").strip().lower()
+        name = str(data.get("name") or "").strip()
+        photo = str(data.get("photo") or "").strip()
+        new_pin = data.get("pin")
+
+        if not name:
+            return jsonify({"success": False, "message": "Name is required."}), 400
+        if not username or not USERNAME_REGEX.match(username):
+            return jsonify({"success": False, "message": "Username must be 4-20 characters and contain only letters, numbers or underscore."}), 400
+        if not email:
+            return jsonify({"success": False, "message": "Email is required."}), 400
+        if new_pin not in (None, "") and not validate_pin(str(new_pin)):
+            return jsonify({"success": False, "message": "PIN must be exactly 4 digits."}), 400
+
+        # Keep username unique across users, but allow the current user to retain it.
+        query = (firestore_db.collection("users")
+                 .where("usernameLower", "==", username)
+                 .limit(1).stream())
+        for existing in query:
+            if existing.id != uid:
+                return jsonify({"success": False, "message": "Username already exists."}), 409
+
+        update_data = {
+            "uid": uid,
+            "name": name,
+            "username": username,
+            "usernameLower": username,
+            "email": email,
+            "updatedAt": datetime.now(timezone.utc)
+        }
+        if photo:
+            update_data["photo"] = photo
+
+        if new_pin not in (None, ""):
+            pin_hash, pin_salt = hash_pin(str(new_pin))
+            update_data["pinHash"] = pin_hash
+            update_data["pinSalt"] = pin_salt
+
+        firestore_db.collection("users").document(uid).set(update_data, merge=True)
+
+        # Keep Firebase Auth profile in sync where permitted. Do not fail the whole
+        # profile save if an optional Auth field cannot be updated.
+        try:
+            auth_update = {"display_name": name}
+            if photo:
+                auth_update["photo_url"] = photo
+            if email and email != decoded.get("email"):
+                auth_update["email"] = email
+            auth.update_user(uid, **auth_update)
+        except Exception as auth_error:
+            print("Optional Firebase Auth profile sync warning:", auth_error)
+
+        return jsonify({
+            "success": True,
+            "message": "Profile updated successfully.",
+            "uid": uid,
+            "username": username,
+            "name": name,
+            "email": email,
+            "photo": photo
+        })
+
+    except Exception as e:
+        print("Update Profile Error:", str(e))
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# =========================================================
 # USERNAME + 4 DIGIT PIN LOGIN
 # =========================================================
 

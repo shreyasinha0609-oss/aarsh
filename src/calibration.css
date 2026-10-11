@@ -35,3 +35,42 @@
   .cal-page{overflow:auto;}
   .cal-layout{height:auto!important;overflow:visible!important;}
 }
+
+
+/* Preview header polish: keep controls centered inside the template preview card */
+.preview-header,
+.alignment-header,
+.precise-alignment-header {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.preview-header > *,
+.alignment-header > *,
+.precise-alignment-header > * {
+  box-sizing: border-box;
+}
+.preview-toolbar,
+.alignment-toolbar,
+.precise-alignment-toolbar {
+  width: min(100%, 420px);
+  margin-left: auto;
+  margin-right: auto;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+/* Aarsh Digital theme: subtle colourful preview surround */
+.preview-card,
+.live-preview,
+.alignment-card,
+.precise-alignment {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 95, 185, .16), transparent 28%),
+    radial-gradient(circle at 88% 10%, rgba(92, 84, 255, .18), transparent 30%),
+    linear-gradient(145deg, rgba(255,255,255,.98), rgba(239,231,255,.96));
+}
+
