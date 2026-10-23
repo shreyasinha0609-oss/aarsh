@@ -450,6 +450,12 @@ function AarshApp() {
   // USERNAME + 4-DIGIT PIN AUTH
   const [profileReady, setProfileReady] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  // SETTINGS MODAL STATES
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [oldPin, setOldPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [pinChangeLoading, setPinChangeLoading] = useState(false);
+  const [notifyAlerts, setNotifyAlerts] = useState(true);
   const [showPinLogin, setShowPinLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -521,7 +527,8 @@ function AarshApp() {
   const [profileForm, setProfileForm] = useState({
     name: "", username: "", email: "", photo: "", pin: "",
     title: "Mr.", firstName: "", lastName: "", mobile: "+91 ", whatsapp: "+91 ",
-    role: RANKS[0], language: "English", gender: "Male", married: "No", profileImages: []
+    role: RANKS[0], language: "English", gender: "Male", married: "No", profileImages: [],
+    aarshId: ""
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profilePhotoInput, setProfilePhotoInput] = useState(null);
@@ -752,7 +759,49 @@ function AarshApp() {
       alert(error.message || "Profile update failed.");
     } finally { setProfileSaving(false); }
   };
+// =========================================================
+  // SETTINGS LOGIC: PIN CHANGE & ACCOUNT DELETE
+  // =========================================================
+  const handlePinUpdate = async () => {
+    if (!/^\d{4}$/.test(newPin)) {
+      alert("Naya PIN exactly 4 digits ka hona chahiye.");
+      return;
+    }
+    if (!user?.uid) return;
+    try {
+      setPinChangeLoading(true);
+      await updateDoc(doc(db, "users", user.uid), {
+        pin: newPin,
+        updatedAt: new Date()
+      });
+      alert("Aapka 4-Digit PIN safalta-purvak badal gaya hai! ✅");
+      setNewPin('');
+    } catch (err) {
+      alert("PIN update nahi ho saka: " + (err.message || "Error"));
+    } finally {
+      setPinChangeLoading(false);
+    }
+  };
 
+  const handleDeleteAccount = async () => {
+    const confirmText = prompt('Account delete karne ke liye "DELETE" likhein. Isse sabhi data hamesha ke liye hat jayega:');
+    if (confirmText !== "DELETE") {
+      alert("Account deletion cancel ho gaya.");
+      return;
+    }
+    if (!user?.uid) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        isDeleted: true,
+        deletedAt: new Date()
+      });
+      alert("Aapka account delete kar diya gaya hai.");
+      await signOut(auth);
+      window.location.reload();
+    } catch (err) {
+      alert("Account delete karne mein samasya aayi: " + (err.message || "Error"));
+    }
+  };
   const sendLiveChat = () => {
     const message = liveChatText.trim();
     if (!message) return;
@@ -1027,6 +1076,24 @@ function AarshApp() {
           const data = snap.data();
 
           setPoints(data.credits ?? 0);
+          let userAarshId = data.aarshId;
+          // Agar user ke paas abhi Aarsh ID nahi hai toh auto-generate karenge
+          if (!userAarshId) {
+            try {
+              const counterRef = doc(db, "system", "userCounter");
+              userAarshId = await runTransaction(db, async (transaction) => {
+                const counterSnap = await transaction.get(counterRef);
+                const currentCount = counterSnap.exists() ? (counterSnap.data().count || 0) : 0;
+                const nextCount = currentCount + 1;
+                transaction.set(counterRef, { count: nextCount }, { merge: true });
+                const formattedId = `AARSH - ${String(nextCount).padStart(3, '0')}`;
+                transaction.set(userRef, { aarshId: formattedId }, { merge: true });
+                return formattedId;
+              });
+            } catch (err) {
+              userAarshId = "AARSH - 001";
+            }
+          }
           const loadedNotifications = Array.isArray(data.notifications)
             ? data.notifications
             : [];
@@ -1043,7 +1110,8 @@ function AarshApp() {
             lastName: data.lastName || (fullName.split(" ").length > 1 ? fullName.split(" ").slice(-1)[0] : ""),
             mobile: data.mobile || "+91 ", whatsapp: data.whatsapp || "+91 ", role: data.role || RANKS[0],
             language: data.language || "English", gender: data.gender || "Male", married: data.married || "No",
-            profileImages: Array.isArray(data.profileImages) && data.profileImages.length ? data.profileImages.slice(0,15) : localProfileImages.slice(0,15)
+            profileImages: Array.isArray(data.profileImages) && data.profileImages.length ? data.profileImages.slice(0,15) : localProfileImages.slice(0,15),
+            aarshId: userAarshId || data.aarshId || "AARSH - 001"
           });
           setProfileReady(true);
           setShowSetupModal(false);
@@ -2395,6 +2463,12 @@ function AarshApp() {
     setOpenMenu(null);
   };
 
+  const openCreativeStudioSettings = () => {
+  setCreativeSettingsRequested(true);
+  setAppView('creative');
+  setOpenMenu(null);
+};
+
   return (
 
     <div
@@ -2409,108 +2483,354 @@ function AarshApp() {
       <header className="aarsh-top-header relative z-[100] px-2 md:px-4 pt-2 md:pt-3">
         <div className="max-w-[1500px] mx-auto relative overflow-visible rounded-[24px] md:rounded-[30px] border border-white/90 bg-white/82 backdrop-blur-2xl shadow-[0_12px_45px_rgba(65,70,170,.18)]">
           <div className="absolute inset-0 pointer-events-none rounded-[24px] md:rounded-[30px] bg-[radial-gradient(circle_at_8%_30%,rgba(255,84,205,.25),transparent_24%),radial-gradient(circle_at_30%_0%,rgba(91,132,255,.18),transparent_27%),radial-gradient(circle_at_67%_0%,rgba(255,180,80,.15),transparent_22%),radial-gradient(circle_at_100%_50%,rgba(92,213,255,.20),transparent_25%)]" />
-          <div className="relative min-h-[72px] md:min-h-[88px] flex items-center gap-2 md:gap-4 px-2.5 md:px-5 py-2">
-            {/* BRAND */}
-            <button type="button" onClick={() => { setAppView('dashboard'); setOpenMenu(null); }} className="flex items-center gap-2 md:gap-3 shrink-0">
-              <div className="aarsh-dashboard-logo-box">
-                <img src="/aarsh-digital-logo.png" alt="Aarsh Digital" className="aarsh-dashboard-logo" />
-              </div>
-              <div className="text-left leading-none">
-                <div className="flex items-center gap-1">
-                  <span className="text-[29px] md:text-[43px] font-black tracking-[-1.5px] bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-600 bg-clip-text text-transparent">Aarsh Digital</span>
-                  <span className="text-pink-500 text-xl md:text-2xl -mt-5">♕</span>
-                </div>
-                <div className="text-[7px] md:text-[10px] tracking-[.28em] font-black text-[#19306c] mt-1">AI • CREATE • DESIGN • GROW</div>
-              </div>
+          <div className="relative min-h-[72px] md:min-h-[88px] flex flex-col md:flex-row items-center justify-between gap-2.5 px-3 md:px-5 py-2.5">
+  
+  {/* ROW 1: BRAND LOGO + 🎧 SUPPORT (LOGO KE THEEK BAGAL MEIN, BINA ARROW KE) */}
+  <div className="flex items-center justify-between w-full md:w-auto gap-3">
+    <button type="button" onClick={() => { setAppView('dashboard'); setOpenMenu(null); }} className="flex items-center gap-2 md:gap-3 shrink-0">
+      <div className="aarsh-dashboard-logo-box">
+        <img src="/aarsh-digital-logo.png" alt="Aarsh Digital" className="aarsh-dashboard-logo" />
+      </div>
+      <div className="text-left leading-none">
+        <div className="flex items-center gap-1">
+          <span className="text-[26px] md:text-[43px] font-black tracking-[-1.5px] bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-600 bg-clip-text text-transparent">Aarsh Digital</span>
+          <span className="text-pink-500 text-xl md:text-2xl -mt-5">♕</span>
+        </div>
+        <div className="text-[7px] md:text-[10px] tracking-[.28em] font-black text-[#19306c] mt-1">AI • CREATE • DESIGN • GROW</div>
+      </div>
+    </button>
+
+    {/* SUPPORT BUTTON (ARROW HATA DIYA HAI - CLICK KARTE HI NEECHE 5 OPTIONS AAYENGE) */}
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpenMenu(openMenu === 'support' ? null : 'support')}
+        className="flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-[16px] md:rounded-[18px] bg-white border border-slate-200 shadow-sm text-[#102967] font-black text-xs md:text-sm whitespace-nowrap cursor-pointer hover:bg-slate-50 transition"
+      >
+        🎧 Support
+      </button>
+
+      {openMenu === 'support' && (
+        <div className="aarsh-top-support-dropdown" role="menu">
+          {/* OPTION 1: LIVE CHAT */}
+          <button
+            type="button"
+            className="aarsh-support-menu-row"
+            onClick={() => { setLiveChatOpen(true); setOpenMenu(null); }}
+          >
+            <span className="aarsh-support-menu-icon bg-indigo-50">💬</span>
+            <div className="aarsh-support-menu-text">
+              <b>Live Chat</b>
+              <small>Chat with Support</small>
+            </div>
+            <span className="aarsh-support-online-badge">● Online</span>
+          </button>
+
+          {/* OPTION 2: CALL US */}
+          <button
+            type="button"
+            className="aarsh-support-menu-row"
+            onClick={() => { setOpenMenu(null); window.location.href = `tel:${SUPPORT_CONFIG.phone}`; }}
+          >
+            <span className="aarsh-support-menu-icon bg-blue-50">📞</span>
+            <div className="aarsh-support-menu-text">
+              <b>Call Us</b>
+              <small>{SUPPORT_CONFIG.phone}</small>
+            </div>
+            <span className="aarsh-support-arrow-tag">›</span>
+          </button>
+
+          {/* OPTION 3: WHATSAPP */}
+          <button
+            type="button"
+            className="aarsh-support-menu-row"
+            onClick={() => {
+              setOpenMenu(null);
+              window.open(
+                `https://wa.me/${SUPPORT_CONFIG.phone.replace(/\D/g, '')}`,
+                '_blank',
+                'noopener,noreferrer'
+              );
+            }}
+          >
+            <span className="aarsh-support-menu-icon bg-emerald-50">🟢</span>
+            <div className="aarsh-support-menu-text">
+              <b>WhatsApp</b>
+              <small>Message us 24×7</small>
+            </div>
+            <span className="aarsh-support-arrow-tag">›</span>
+          </button>
+
+          {/* OPTION 4: MAIL US */}
+          <button
+            type="button"
+            className="aarsh-support-menu-row"
+            onClick={() => { setOpenMenu(null); window.location.href = `mailto:${SUPPORT_CONFIG.email}`; }}
+          >
+            <span className="aarsh-support-menu-icon bg-pink-50">✉️</span>
+            <div className="aarsh-support-menu-text">
+              <b>Mail Us</b>
+              <small>{SUPPORT_CONFIG.email}</small>
+            </div>
+            <span className="aarsh-support-arrow-tag">›</span>
+          </button>
+
+          {/* OPTION 5: HELP & FAQ */}
+          <button
+            type="button"
+            className="aarsh-support-menu-row"
+            onClick={() => { setFaqOpen(true); setOpenMenu(null); }}
+          >
+            <span className="aarsh-support-menu-icon bg-amber-50">❓</span>
+            <div className="aarsh-support-menu-text">
+              <b>Help &amp; FAQ</b>
+              <small>Common questions</small>
+            </div>
+            <span className="aarsh-support-arrow-tag">›</span>
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+
+  {/* TAGLINE (DESKTOP) */}
+  <div className="hidden xl:flex flex-1 justify-center min-w-[220px]">
+    <div className="relative px-9 py-3 text-white text-[14px] font-semibold italic rounded-full bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-pink-400 shadow-[0_8px_25px_rgba(120,50,220,.22)] -rotate-1 whitespace-nowrap">
+      Design · Inspire · Grow · Together
+    </div>
+  </div>
+
+  {/* ROW 2: POINTS → RECHARGE → NOTIFICATIONS → PROFILE */}
+  <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto shrink-0">
+    
+    {/* POINTS */}
+    <div className="shrink-0 flex items-center gap-1.5 md:gap-3 rounded-[16px] md:rounded-[18px] px-2.5 md:px-4 py-1.5 md:py-2.5 bg-white border border-blue-100 shadow-sm min-w-[100px] md:min-w-[150px]">
+      <span className="text-xl md:text-3xl">⭐</span>
+      <div className="text-left leading-tight">
+        <div className="font-black text-[#102967] text-xs md:text-base whitespace-nowrap">{points} Points</div>
+        <div className="text-[7px] md:text-[9px] text-[#40548b] font-bold whitespace-nowrap">5 points / poster</div>
+      </div>
+    </div>
+
+    {/* RECHARGE */}
+    <button type="button" onClick={() => setShowRechargeModal(true)} className="shrink-0 px-3 md:px-6 py-2 md:py-3 rounded-[16px] md:rounded-[18px] text-white font-black text-xs md:text-base bg-gradient-to-r from-fuchsia-500 via-purple-600 to-orange-400 shadow-md border border-white whitespace-nowrap">
+      ⚡ Recharge
+    </button>
+
+    {/* NOTIFICATIONS */}
+    <div className="relative shrink-0">
+      <button type="button" onClick={() => setOpenMenu(openMenu === 'notifications' ? null : 'notifications')} className="relative w-9 h-9 md:w-11 md:h-11 rounded-[14px] md:rounded-[18px] bg-white border border-slate-200 shadow-sm text-base md:text-xl flex items-center justify-center">
+        🔔
+        <span className="absolute -right-1 -top-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-black">
+          {unreadCount}
+        </span>
+      </button>
+      {openMenu === 'notifications' && (
+        <div className="aarsh-notifications-popup fixed sm:absolute inset-x-3 sm:inset-x-auto sm:right-0 top-[80px] sm:top-[calc(100%+10px)] z-[99999] w-auto sm:w-[350px] max-h-[80vh] flex flex-col rounded-[26px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef7ff] shadow-[0_20px_50px_rgba(20,15,60,0.22)] border border-white p-4">
+          
+          {/* POPUP HEADER */}
+          <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-100">
+            <div>
+              <b className="text-base md:text-lg text-[#102965] flex items-center gap-1.5">
+                <span>🔔</span> Notifications
+              </b>
+              <div className="text-[10px] md:text-[11px] text-[#6879a4] font-medium">Your Aarsh Digital activity &amp; updates</div>
+            </div>
+            <button 
+              type="button"
+              onClick={() => setOpenMenu(null)} 
+              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center text-sm cursor-pointer"
+            >
+              ✕
             </button>
-
-            {/* TAGLINE */}
-            <div className="hidden xl:flex flex-1 justify-center min-w-[220px]">
-              <div className="relative px-9 py-3 text-white text-[14px] font-semibold italic rounded-full bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-pink-400 shadow-[0_8px_25px_rgba(120,50,220,.22)] -rotate-1 whitespace-nowrap">
-                Design · Inspire · Grow · Together
-              </div>
-            </div>
-
-            {/* RIGHT CONTROL GROUP: POINTS → RECHARGE → SUPPORT → NOTIFICATIONS → PROFILE */}
-            <div className="ml-auto flex items-center gap-2 md:gap-3 shrink-0">
-            {/* POINTS */}
-            <div className="shrink-0 flex items-center gap-2 md:gap-3 rounded-[18px] px-2.5 md:px-4 py-2 md:py-2.5 bg-white border border-blue-100 shadow-[0_0_24px_rgba(55,110,255,.20)] min-w-[105px] md:min-w-[150px]">
-              <span className="text-2xl md:text-3xl">⭐</span>
-              <div className="text-left leading-tight"><div className="font-black text-[#102967] text-xs md:text-base whitespace-nowrap">{points} Points</div><div className="text-[8px] md:text-[9px] text-[#40548b] font-bold whitespace-nowrap">5 points / poster</div></div>
-            </div>
-
-            {/* RECHARGE */}
-            <button type="button" onClick={() => setShowRechargeModal(true)} className="shrink-0 px-3 md:px-6 py-2.5 md:py-3 rounded-[18px] text-white font-black text-xs md:text-base bg-gradient-to-r from-fuchsia-500 via-purple-600 to-orange-400 shadow-[0_0_26px_rgba(240,50,210,.34)] border border-white whitespace-nowrap">⚡ Recharge</button>
-
-            {/* SUPPORT */}
-            <div className="relative shrink-0">
-              <button type="button" onClick={() => setOpenMenu(openMenu === 'support' ? null : 'support')} className="hidden md:flex items-center gap-2 px-3 md:px-4 py-3 rounded-[18px] bg-white/96 border border-white shadow-md text-[#102967] font-black text-xs md:text-sm whitespace-nowrap">🎧 Support <span className="text-sm">⌄</span></button>
-              {openMenu === 'support' && (
-                <div className="aarsh-support-popup absolute right-0 top-[calc(100%+10px)] z-[80] w-[390px] max-w-[calc(100vw-24px)] rounded-[28px] bg-gradient-to-br from-white via-[#f8f5ff] to-[#eef7ff] backdrop-blur-2xl border border-white shadow-[0_25px_70px_rgba(45,50,130,.24)] p-4">
-                  <div className="flex items-center justify-between px-2 pb-3 border-b border-indigo-50"><div className="flex items-center gap-3"><div className="w-12 h-12 rounded-full bg-gradient-to-br from-fuchsia-300 to-blue-300 flex items-center justify-center text-2xl">🎧</div><div><div className="font-black text-xl text-[#102965]">Customer Support</div><div className="text-xs text-[#60709a]">We're here to help you!</div></div></div><button onClick={() => setOpenMenu(null)} className="text-2xl text-slate-400">×</button></div>
-                  <button onClick={() => { setLiveChatOpen(true); setOpenMenu(null); }} className="w-full mt-3 p-3 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center gap-3 text-left hover:bg-blue-50"><span className="w-11 h-11 rounded-full bg-indigo-100 flex items-center justify-center text-xl">💬</span><span className="flex-1"><b className="block text-[#102965]">Live Chat</b><small className="text-[#63749e]">Chat with Aarsh Digital Support</small></span><span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-600 text-xs font-black">● Online</span></button>
-                  <button onClick={() => window.open(`https://wa.me/${SUPPORT_CONFIG.phone.replace(/\D/g, '')}`, '_blank', 'noopener,noreferrer')} className="w-full mt-2 p-3 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center gap-3 text-left hover:bg-emerald-50"><span className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-xl">🟢</span><span className="flex-1"><b className="block text-[#102965]">WhatsApp Chat</b><small className="text-[#63749e]">Message us on WhatsApp</small></span><span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-600 text-xs font-black">24×7*</span></button>
-                  <button onClick={() => window.location.href=`mailto:${SUPPORT_CONFIG.email}`} className="w-full mt-2 p-3 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center gap-3 text-left hover:bg-pink-50"><span className="w-11 h-11 rounded-full bg-pink-100 flex items-center justify-center text-xl">✉️</span><span className="flex-1"><b className="block text-[#102965]">Mail Us</b><small className="text-[#63749e]">{SUPPORT_CONFIG.email}</small></span><span className="px-3 py-1 rounded-full bg-indigo-50 text-[#40548b] text-xs font-black">24–48 hrs</span></button>
-                  <button onClick={() => window.location.href=`tel:${SUPPORT_CONFIG.phone}`} className="w-full mt-2 p-3 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center gap-3 text-left hover:bg-emerald-50"><span className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-xl">📞</span><span className="flex-1"><b className="block text-[#102965]">Call Us</b><small className="text-[#63749e]">{SUPPORT_CONFIG.phone.replace(/^\+91/, '+91 ')}</small></span><span className="px-3 py-1 rounded-full bg-indigo-50 text-[#40548b] text-xs font-black">{SUPPORT_CONFIG.hours}</span></button>
-                  <button onClick={() => { setFaqOpen(true); setOpenMenu(null); }} className="w-full mt-2 p-3 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center gap-3 text-left hover:bg-blue-50"><span className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center text-xl">❓</span><span><b className="block text-[#102965]">Help & FAQ</b><small className="text-[#63749e]">10 common questions answered</small></span></button>
-                  <div className="mt-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-pink-50 to-purple-50 text-sm font-bold text-[#40548b]">💗 Your Success, Our Support</div>
-                </div>
-              )}
-            </div>
-
-            {/* NOTIFICATIONS */}
-            <div className="relative shrink-0">
-              <button type="button" onClick={() => setOpenMenu(openMenu === 'notifications' ? null : 'notifications')} className="relative w-11 h-11 rounded-[18px] bg-white/96 border border-white shadow-md text-xl">🔔<span className="absolute -right-1 -top-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-black">{unreadCount}</span></button>
-              {openMenu === 'notifications' && (
-                <div className="aarsh-notifications-popup absolute right-0 top-[calc(100%+10px)] z-[80] w-[380px] max-w-[calc(100vw-24px)] rounded-[28px] bg-gradient-to-br from-white via-[#f8f5ff] to-[#eef7ff] shadow-2xl border border-white p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <b className="text-lg text-[#102965]">Notifications</b>
-                      <div className="text-[11px] text-[#6879a4]">Your Aarsh Digital activity & updates</div>
-                    </div>
-                    <button onClick={() => setOpenMenu(null)} className="text-xl text-slate-400">×</button>
-                  </div>
-
-                  <button
-                    onClick={markNotificationsRead}
-                    className="text-[11px] font-black text-purple-600 hover:text-blue-600 mb-2"
-                  >
-                    Mark all as read
-                  </button>
-
-                  <div className="max-h-80 overflow-y-auto space-y-2">
-                    {notifications.length ? notifications.slice(0, 20).map((n) => (
-                      <div key={n.id} className={`p-3 rounded-2xl border ${n.read ? 'bg-white border-slate-100' : 'bg-gradient-to-r from-pink-50 to-blue-50 border-purple-100'}`}>
-                        <div className="flex items-start gap-2">
-                          <span className="text-lg">{n.type === 'payment' ? '💳' : n.type === 'reward' ? '🎁' : n.type === 'poster' ? '🖼️' : '📢'}</span>
-                          <div className="min-w-0">
-                            <div className="font-black text-[#102965] text-sm">{n.title}</div>
-                            <div className="text-xs text-[#63749e] mt-0.5">{n.message}</div>
-                          </div>
-                        </div>
-                      </div>
-                    )) : (
-                      <div className="p-6 text-center rounded-2xl bg-white/80 border border-slate-100">
-                        <div className="text-3xl mb-2">🔔</div>
-                        <div className="font-black text-[#102965]">No new notifications</div>
-                        <div className="text-xs text-[#63749e] mt-1">Recharge, poster and system updates will appear here.</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* PROFILE */}
-            <div className="relative shrink-0">
-              <button type="button" onClick={() => setOpenMenu(openMenu === 'profile' ? null : 'profile')} className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 rounded-[18px] bg-white/96 border border-white shadow-md">
-                <div className="w-10 h-10 rounded-full bg-[#16396f] text-white flex items-center justify-center font-black border-2 border-cyan-300">{(user?.displayName || 'S').charAt(0).toUpperCase()}</div>
-                <div className="hidden xl:block text-left leading-tight"><div className="text-sm font-black text-[#122968]">Hello, {(user?.displayName || 'S').split(' ')[0]}</div><div className="text-[10px] font-bold text-fuchsia-600">♕ Premium Creator</div></div><span className="hidden md:block text-[#122968]">⌄</span>
-              </button>
-              {openMenu === 'profile' && <div className="aarsh-profile-popup absolute right-0 top-[calc(100%+10px)] z-[80] w-72 rounded-3xl bg-gradient-to-br from-white via-[#f9f5ff] to-[#eef7ff] backdrop-blur-xl shadow-2xl border border-white p-3"><div className="px-3 py-3 border-b border-gray-100"><div className="font-black text-lg text-[#102965]">Hello, {(user?.displayName || 'Aarsh User').split(' ')[0]}</div><div className="text-xs text-fuchsia-600 font-bold">♕ Premium Creator</div></div><button onClick={openProfileEditor} className="w-full text-left p-3 rounded-xl hover:bg-purple-50 font-bold">♙ My Profile</button><button onClick={() => { setOpenMenu(null); setCreativeSettingsRequested(true); setAppView('creative'); }} className="w-full text-left p-3 rounded-xl hover:bg-violet-50 font-bold">▣ Banner Settings</button><button onClick={() => { setAppView('dashboard'); setOpenMenu(null); setTimeout(() => document.getElementById('creative-studios')?.scrollIntoView({ behavior: 'smooth' }), 50); }} className="w-full text-left p-3 rounded-xl hover:bg-blue-50 font-bold">▣ My Posters</button><button onClick={() => { setOpenMenu('transactions'); }} className="w-full text-left p-3 rounded-xl hover:bg-green-50 font-bold">◷ Transaction History</button><button onClick={() => setOpenMenu('notifications')} className="w-full text-left p-3 rounded-xl hover:bg-pink-50 font-bold">♧ Notifications</button><button onClick={openProfileEditor} className="w-full text-left p-3 rounded-xl hover:bg-gray-50 font-bold">⚙ Settings</button><div className="h-px bg-gray-100 my-1" /><button onClick={handleLogout} className="w-full text-left p-3 rounded-xl text-red-600 font-black hover:bg-red-50">↪ Logout</button></div>}
-            </div>
-            </div>
           </div>
+
+          {/* ACTION BUTTON */}
+          <div className="flex justify-between items-center mb-2">
+            <button
+              type="button"
+              onClick={markNotificationsRead}
+              className="text-[11px] font-black text-purple-600 hover:text-blue-600 transition"
+            >
+              Mark all as read
+            </button>
+            <span className="text-[10px] font-bold text-slate-400">
+              {notifications.filter(n => !n.read).length} unread
+            </span>
+          </div>
+
+          {/* NOTIFICATIONS SCROLLABLE LIST */}
+          <div className="overflow-y-auto space-y-2 pr-1 max-h-[calc(80vh-110px)]">
+            {notifications.length ? notifications.slice(0, 20).map((n) => (
+              <div 
+                key={n.id} 
+                className={`p-3 rounded-2xl border transition ${
+                  n.read 
+                    ? 'bg-white border-slate-100 shadow-sm' 
+                    : 'bg-gradient-to-r from-pink-50/80 to-purple-50/80 border-purple-200 shadow-sm'
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  <span className="w-8 h-8 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-base shrink-0">
+                    {n.type === 'payment' ? '💳' : n.type === 'reward' ? '🎁' : n.type === 'poster' ? '🖼️' : '📢'}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-black text-[#102965] text-xs md:text-sm">{n.title}</div>
+                    <div className="text-[11px] text-[#63749e] mt-0.5 leading-relaxed break-words">{n.message}</div>
+                  </div>
+                </div>
+              </div>
+            )) : (
+              <div className="p-6 text-center rounded-2xl bg-white/80 border border-slate-100 my-2">
+                <div className="text-3xl mb-2">🔔</div>
+                <div className="font-black text-[#102965] text-sm">No new notifications</div>
+                <div className="text-[11px] text-[#63749e] mt-1">Recharge, poster and system updates will appear here.</div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+    </div>
+
+    {/* PROFILE */}
+    <div className="relative shrink-0">
+      <button type="button" onClick={() => setOpenMenu(openMenu === 'profile' ? null : 'profile')} className="flex items-center gap-1.5 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-[14px] md:rounded-[18px] bg-white border border-slate-200 shadow-sm">
+        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#16396f] text-white flex items-center justify-center font-black text-xs md:text-base border-2 border-cyan-300">
+          {(user?.displayName || 'S').charAt(0).toUpperCase()}
+        </div>
+        <div className="hidden xl:block text-left leading-tight">
+          <div className="text-sm font-black text-[#122968]">Hello, {(user?.displayName || 'S').split(' ')[0]}</div>
+          <div className="text-[10px] font-bold text-fuchsia-600">♕ Premium Creator</div>
+        </div>
+        <span className="hidden md:block text-[#122968]">⌄</span>
+      </button>
+      {openMenu === 'profile' && (
+  <div className="aarsh-profile-popup absolute right-0 top-[calc(100%+10px)] z-[110] w-[275px] max-w-[calc(100vw-24px)] rounded-[26px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef6ff] backdrop-blur-2xl shadow-[0_20px_50px_rgba(30,15,80,0.18)] border border-white/90 p-2.5">
+    
+    {/* USER MINI HEADER */}
+    <div className="p-2.5 mb-1.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 border border-purple-100/60 flex items-center justify-between">
+      <div className="min-w-0">
+        <div className="text-xs font-black text-[#102965] truncate">
+          Hello, {(user?.displayName || 'Creator').split(' ')[0]}
+        </div>
+        <div className="text-[9px] font-bold text-fuchsia-600 flex items-center gap-1">
+          <span>♕</span> <span>{profileForm.aarshId || 'AARSH - 001'}</span>
+        </div>
+      </div>
+      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">● Pro</span>
+    </div>
+
+    {/* MENU ITEMS (ALL SAME FONT & THEME COLORED ICONS) */}
+    <div className="space-y-1">
+      {/* 1. MY PROFILE */}
+      <button 
+        type="button"
+        onClick={openProfileEditor} 
+        className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-purple-50 transition text-left group"
+      >
+        <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white flex items-center justify-center text-xs shadow-sm">
+          👤
+        </span>
+        <span className="text-xs font-black text-[#102965] group-hover:text-purple-700">
+          My Profile
+        </span>
+      </button>
+
+      {/* 2. BANNER SETTINGS */}
+      <button 
+        type="button"
+        onClick={() => { setOpenMenu(null); setCreativeSettingsRequested(true); setAppView('creative'); }} 
+        className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-violet-50 transition text-left group"
+      >
+        <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-xs shadow-sm">
+          ▣
+        </span>
+        <span className="text-xs font-black text-[#102965] group-hover:text-violet-700">
+          Banner Settings
+        </span>
+      </button>
+
+      {/* 3. MY POSTERS */}
+      <button 
+        type="button"
+        onClick={() => { setAppView('dashboard'); setOpenMenu(null); setTimeout(() => document.getElementById('creative-studios')?.scrollIntoView({ behavior: 'smooth' }), 50); }} 
+        className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-blue-50 transition text-left group"
+      >
+        <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center text-xs shadow-sm">
+          🖼️
+        </span>
+        <span className="text-xs font-black text-[#102965] group-hover:text-blue-700">
+          My Posters
+        </span>
+      </button>
+
+      {/* 4. TRANSACTION HISTORY */}
+      <button 
+        type="button"
+        onClick={() => setOpenMenu('transactions')} 
+        className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-emerald-50 transition text-left group"
+      >
+        <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-xs shadow-sm">
+          ⏱
+        </span>
+        <span className="text-xs font-black text-[#102965] group-hover:text-emerald-700">
+          Transaction History
+        </span>
+      </button>
+
+      {/* 5. NOTIFICATIONS */}
+      <button 
+        type="button"
+        onClick={() => setOpenMenu('notifications')} 
+        className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-pink-50 transition text-left group"
+      >
+        <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white flex items-center justify-center text-xs shadow-sm">
+          🔔
+        </span>
+        <span className="text-xs font-black text-[#102965] group-hover:text-pink-700">
+          Notifications
+        </span>
+      </button>
+
+      {/* 6. SETTINGS (Font, weight aur size ekdum barabar) */}
+      <button 
+        type="button"
+        onClick={() => { setOpenMenu(null); setShowSettingsModal(true); }} 
+        className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-amber-50 transition text-left group"
+      >
+        <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center text-xs shadow-sm">
+          ⚙
+        </span>
+        <span className="text-xs font-black text-[#102965] group-hover:text-amber-700">
+          Settings
+        </span>
+      </button>
+    </div>
+
+    {/* SEPARATOR */}
+    <div className="h-px bg-slate-200/80 my-1.5" />
+
+    {/* 7. LOGOUT */}
+    <button 
+      type="button"
+      onClick={handleLogout} 
+      className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-red-50 text-red-600 transition text-left group"
+    >
+      <span className="w-7 h-7 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-xs font-black group-hover:bg-red-600 group-hover:text-white transition">
+        ↪
+      </span>
+      <span className="text-xs font-black text-red-600 group-hover:text-red-700">
+        Logout
+      </span>
+    </button>
+
+  </div>
+)}
+    </div>
+
+  </div>
+</div>
         </div>
       </header>
 
@@ -2535,13 +2855,13 @@ function AarshApp() {
           <section className="relative overflow-hidden rounded-[30px] border border-white/90 bg-white/75 backdrop-blur-xl shadow-[0_18px_60px_rgba(64,72,180,.15)] min-h-[330px] md:min-h-[375px]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_8%_15%,rgba(255,80,205,.24),transparent_25%),radial-gradient(circle_at_35%_10%,rgba(117,123,255,.20),transparent_28%),radial-gradient(circle_at_72%_15%,rgba(89,205,255,.18),transparent_25%),radial-gradient(circle_at_90%_80%,rgba(255,150,215,.20),transparent_25%)]" />
             <div className="absolute -right-20 -bottom-28 w-80 h-80 rounded-full bg-cyan-200/25 blur-3xl" />
-            <div className="relative grid lg:grid-cols-[1.15fr_.85fr] items-center min-h-[330px] md:min-h-[375px] px-6 md:px-10 py-8 gap-5">
+            <div className="aarsh-mobile-hero-inner relative grid lg:grid-cols-[1.15fr_.85fr] items-center min-h-[330px] md:min-h-[375px] px-6 md:px-10 py-8 gap-5">
               <div className="max-w-2xl">
                 <div className="text-xl md:text-2xl font-black text-[#102967]">Welcome to</div>
                 <h1 className="text-4xl md:text-6xl font-black leading-[.96] mt-1 bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-600 bg-clip-text text-transparent">Aarsh Digital</h1>
                 <h2 className="text-xl md:text-2xl font-bold text-[#2f4a8d] mt-3">One Platform. Endless Possibilities.</h2>
                 <p className="text-sm md:text-base lg:text-lg text-[#566ba0] max-w-xl mt-2 leading-relaxed">Create stunning posters, videos, banners, visiting cards and more with the power of AI. Simple. Fast. Beautiful.</p>
-                <div className="flex flex-wrap gap-2 mt-5"><span className="px-4 py-2 rounded-full bg-pink-100/90 text-pink-600 font-black text-sm">♕ 18 Ranks</span><span className="px-4 py-2 rounded-full bg-blue-100/90 text-blue-700 font-black text-sm">▧ 172 Templates</span><span className="px-4 py-2 rounded-full bg-emerald-100/90 text-emerald-600 font-black text-sm">🎨 9 Background Styles</span></div>
+                <div className="flex flex-wrap gap-2 mt-5"><span className="px-4 py-2 rounded-full bg-pink-100/90 text-pink-600 font-black text-sm">♕ 18 Ranks</span><span className="px-4 py-2 rounded-full bg-blue-100/90 text-blue-700 font-black text-sm">▧ 1000+ Templates</span><span className="px-4 py-2 rounded-full bg-emerald-100/90 text-emerald-600 font-black text-sm">🎨 25+ Creative Options</span></div>
                 <button type="button" onClick={() => openCreativeStudio(false)} className="mt-6 px-9 py-4 rounded-2xl text-white text-lg font-black bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-500 shadow-[0_0_32px_rgba(170,40,255,.38)] hover:scale-[1.02] transition">✣ Start Creating <span className="ml-2">→</span></button>
               </div>
               <div className="hidden md:flex justify-center items-center relative h-full">
@@ -2559,8 +2879,8 @@ function AarshApp() {
           </section>
 
           {/* STATS STRIP */}
-          <section className="mt-3 rounded-[24px] bg-white/80 border border-white shadow-lg p-3 md:p-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-            {[['♕','18','Ranks'],['▧','172','Templates'],['🎨','9','Background Styles'],['∞','Unlimited','Creativity']].map(([icon,value,label],i)=><div key={label} className={`flex items-center justify-center gap-3 py-2 ${i<3?'md:border-r border-slate-200':''}`}><span className="text-2xl md:text-3xl text-fuchsia-500">{icon}</span><div><div className="font-black text-[#102967] text-lg md:text-xl">{value}</div><div className="text-[10px] md:text-xs font-bold text-[#66769e]">{label}</div></div></div>)}
+         <section className="aarsh-mobile-stats mt-3 rounded-[24px] bg-white/80 border border-white shadow-lg p-3 md:p-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+            {[['♕','18','Ranks'],['▧','1000+','Templates'],['🎨','25+','Creative Options'],['∞','Unlimited','Creativity']].map(([icon,value,label],i)=><div key={label} className={`flex items-center justify-center gap-3 py-2 ${i<3?'md:border-r border-slate-200':''}`}><span className="text-2xl md:text-3xl text-fuchsia-500">{icon}</span><div><div className="font-black text-[#102967] text-lg md:text-xl">{value}</div><div className="text-[10px] md:text-xs font-bold text-[#66769e]">{label}</div></div></div>)}
           </section>
 
           {/* MILESTONE */}
@@ -2576,10 +2896,10 @@ function AarshApp() {
           </section>
 
           {/* STUDIOS */}
-          <div id="creative-studios" className="flex items-end justify-between mt-6 mb-3 px-1"><h2 className="text-2xl md:text-3xl font-black text-[#102967]">🎨 Choose Your Creative Studio</h2><div className="hidden md:block text-sm text-[#53699e]">Multiple Tools. One Creative Platform.</div></div>
-          <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+         <div id="creative-studios" className="aarsh-mobile-studio-title flex items-end justify-between mt-6 mb-3 px-1"><h2 className="text-2xl md:text-3xl font-black text-[#102967]">🎨 Choose Your Creative Studio</h2><div className="hidden md:block text-sm text-[#53699e]">Multiple Tools. One Creative Platform.</div></div>
+          <section className="aarsh-mobile-studio-grid grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {[
-              {icon:'🖼️',name:'Poster Creation',desc:'Create stunning posters with AI. Simple. Fast. Beautiful.',live:true,details:'172 Templates  •  18 Ranks  •  9 Background Styles'},
+              {icon:'🖼️',name:'Poster Creation',desc:'Create stunning posters with AI. Simple. Fast. Beautiful.',live:true,details:''},
               {icon:'🎬',name:'Video Studio',desc:'Create engaging videos automatically with AI.'},
               {icon:'🎨',name:'Banner Studio',desc:'Design banners for business, promotions & events.'},
               {icon:'✈️',name:'Tour & Travel Studio',desc:'Design beautiful tour & travel posts with AI.'},
@@ -2589,13 +2909,37 @@ function AarshApp() {
               {icon:'📖',name:'Brochure Studio',desc:'Create company profiles, product brochures, service brochures and more.'},
               {icon:'🎉',name:'Festival & Event Studio',desc:'Design creative posts for every special occasion.'},
               {icon:'🤖',name:'AI Creative Studio',desc:'Just describe what you need and let AI create stunning designs.'}
-            ].map((studio)=><div key={studio.name} className="group rounded-[22px] bg-white/82 border border-white shadow-[0_10px_30px_rgba(68,76,155,.10)] p-4 flex flex-col min-h-[245px] hover:-translate-y-1.5 hover:shadow-[0_18px_38px_rgba(80,70,170,.16)] transition-all">
-              <div className="flex items-start gap-3"><div className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-fuchsia-300 via-purple-300 to-cyan-300 flex items-center justify-center text-3xl shadow-md">{studio.icon}</div><div className="min-w-0"><h3 className="font-black text-[#102967] text-[16px] leading-tight">{studio.name}</h3><span className={`inline-block mt-2 px-3 py-1 rounded-full text-[9px] font-black ${studio.live?'bg-emerald-100 text-emerald-600':'bg-orange-100 text-orange-600'}`}>{studio.live?'● LIVE':'⚙ Coming Soon'}</span></div></div>
-              <p className="text-[12px] text-[#62739e] mt-4 leading-relaxed">{studio.desc}</p>
-              {studio.details && <div className="text-[10px] font-bold text-[#1f4c9d] mt-2 leading-5">• 172 Templates &nbsp; • 18 Ranks<br/>• 9 Background Styles</div>}
-              <button type="button" onClick={() => studio.live ? openCreativeStudio(false) : alert(`${studio.name} is currently under maintenance / coming soon.`)} className={`mt-auto w-full py-3 rounded-2xl font-black text-sm transition ${studio.live?'text-white bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-500 shadow-lg group-hover:shadow-[0_0_24px_rgba(190,40,240,.30)]':'bg-slate-300/80 text-[#18346f]'}`}>{studio.live?'✣ Start Creating  →':'⚙ Under Maintenance'}</button>
-            </div>)}
-          </section>
+            ].map((studio)=><div key={studio.name} className="aarsh-mobile-studio-card group rounded-[22px] bg-white/82 border border-white shadow-[0_10px_30px_rgba(68,76,155,.10)] p-4 flex flex-col min-h-[245px] hover:-translate-y-1.5 hover:shadow-[0_18px_38px_rgba(80,70,170,.16)] transition-all">
+  <div className="flex items-start gap-3">
+    <div className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-fuchsia-300 via-purple-300 to-cyan-300 flex items-center justify-center text-3xl shadow-md">
+      {studio.icon}
+    </div>
+    <div className="min-w-0">
+      <h3 className="font-black text-[#102967] text-[16px] leading-tight">{studio.name}</h3>
+      <span className={`inline-block mt-2 px-3 py-1 rounded-full text-[9px] font-black ${studio.live?'bg-emerald-100 text-emerald-600':'bg-orange-100 text-orange-600'}`}>
+        {studio.live?'● LIVE':'⚙ Coming Soon'}
+      </span>
+    </div>
+  </div>
+
+  <p className="text-[12px] text-[#62739e] mt-4 leading-relaxed">{studio.desc}</p>
+
+  {studio.details && (
+    <div className="text-[10px] font-bold text-[#1f4c9d] mt-2 leading-5">
+      • 1000+ Templates &nbsp; • 18 Ranks<br />
+      • 25+ Background Styles
+    </div>
+  )}
+
+  <button
+    type="button"
+    onClick={() => studio.live ? openCreativeStudio(false) : alert(`${studio.name} is currently under maintenance / coming soon.`)}
+    className={`mt-auto w-full py-3 rounded-2xl font-black text-sm transition ${studio.live?'text-white bg-gradient-to-r from-fuchsia-500 via-purple-600 to-blue-500 shadow-lg group-hover:shadow-[0_0_24px_rgba(190,40,240,.30)]':'bg-slate-300/80 text-[#18346f]'}`}
+  >
+    {studio.live?'✣ Start Creating  →':'⚙ Under Maintenance'}
+  </button>
+</div>)}
+              </section>
 
           {/* VALUE STRIP */}
           <section className="mt-4 rounded-[24px] bg-white/80 border border-white shadow-lg p-5 grid md:grid-cols-4 gap-4 items-center"><div className="flex items-center gap-3"><span className="text-3xl">⚡</span><div><b className="text-[#102967]">Easy to Use</b><p className="text-xs text-gray-500">No design skills required</p></div></div><div className="flex items-center gap-3"><span className="text-3xl">💎</span><div><b className="text-[#102967]">Professional Quality</b><p className="text-xs text-gray-500">Create like a pro</p></div></div><div className="flex items-center gap-3"><span className="text-3xl">◷</span><div><b className="text-[#102967]">Save Time</b><p className="text-xs text-gray-500">Get results in seconds</p></div></div><div className="text-center text-xl md:text-2xl italic font-semibold text-[#172f76]">Create · Innovate · Grow</div></section>
@@ -2605,7 +2949,16 @@ function AarshApp() {
         <main className="aarsh-profile-page max-w-[1200px] mx-auto px-3 md:px-5 pb-12">
           <section className="rounded-[30px] bg-white/82 border border-white shadow-xl p-5 md:p-8 mb-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div><div className="text-[10px] font-black tracking-[.22em] text-fuchsia-600">AARSH DIGITAL • MY PROFILE</div><h1 className="text-3xl md:text-4xl font-black text-[#102965] mt-1">My Profile</h1><p className="text-sm text-[#63749e] mt-1">Manage your creator profile, languages and personal preferences.</p></div>
+              <div>
+                <div className="text-[10px] font-black tracking-[.22em] text-fuchsia-600">AARSH DIGITAL • MY PROFILE</div>
+                <h1 className="text-3xl md:text-4xl font-black text-[#102965] mt-1">My Profile</h1>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500">User ID :</span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 text-xs font-black text-[#5b21b6] tracking-wider shadow-sm">
+                    {profileForm.aarshId || 'AARSH - 001'}
+                  </span>
+                </div>
+              </div>
               <div className="flex gap-2"><button onClick={() => { setCreativeSettingsRequested(true); setAppView('creative'); }} className="px-4 py-3 rounded-2xl bg-white border border-purple-100 text-[#102965] font-black shadow-sm">▣ Banner Settings</button><button onClick={() => setAppView('dashboard')} className="px-4 py-3 rounded-2xl bg-[#102965] text-white font-black">← Dashboard</button></div>
             </div>
           </section>
@@ -3397,25 +3750,73 @@ function AarshApp() {
       </footer>
 
       {openMenu === 'transactions' && (
-        <div className="fixed inset-0 z-[90] bg-[#17215a]/35 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOpenMenu(null)}>
-          <div className="w-full max-w-lg rounded-[28px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef8ff] border border-white shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <div><h3 className="text-2xl font-black text-[#102965]">Transaction History</h3><p className="text-xs text-[#63749e]">Recharge history will appear here.</p></div>
-              <button onClick={() => setOpenMenu(null)} className="text-xl text-slate-400">×</button>
-            </div>
-            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
-              {transactions.length ? transactions.map((tx, i) => (
-                <div key={`${tx.paymentId || 'tx'}_${i}`} className="p-4 rounded-2xl bg-white border border-slate-100">
-                  <div className="flex justify-between gap-3"><b className="text-[#102965]">+{tx.points || 0} Points</b><span className="text-emerald-600 text-xs font-black">✅ {tx.status || 'verified'}</span></div>
-                  <div className="text-xs text-[#63749e] mt-1">₹{tx.amount || tx.points || 0} • {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : '—'}</div>
-                  <div className="text-[10px] text-[#7a89ac] mt-2 break-all">Order: {tx.orderId || '—'}<br/>Payment: {tx.paymentId || '—'}</div>
-                </div>
-              )) : <div className="rounded-2xl bg-white border border-slate-100 p-5 text-sm text-[#63749e] text-center">No recharge transactions yet.</div>}
-            </div>
-          </div>
+  <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div className="relative bg-white w-full max-w-md rounded-[28px] shadow-2xl border border-slate-100 p-5 md:p-6 text-left">
+      
+      {/* HEADER: TITLE + CLOSE (✕) BUTTON */}
+      <div className="flex justify-between items-start mb-3 pb-2 border-b border-slate-100">
+        <div>
+          <h3 className="text-lg font-black text-[#102965]">Transaction History</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Your recharge and points history</p>
         </div>
-      )}
+        <button
+          type="button"
+          onClick={() => setOpenMenu(null)}
+          className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-lg cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
 
+      {/* TRANSACTIONS LIST YA EMPTY STATE */}
+      <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+        {transactions && transactions.length > 0 ? (
+          transactions.map((tx, idx) => (
+            <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div>
+                <div className="font-black text-xs text-[#102965]">
+                  {tx.points ? `+${tx.points} Points` : 'Recharge'}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : (tx.date || 'Recent')}
+                </div>
+                {(tx.orderId || tx.paymentId) && (
+                  <div className="text-[9px] text-slate-400 mt-1 break-all">
+                    {tx.orderId ? `Order: ${tx.orderId}` : ''} {tx.paymentId ? `| Pay: ${tx.paymentId}` : ''}
+                  </div>
+                )}
+              </div>
+              <div className="font-bold text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                ₹{tx.amount || tx.price || 0}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="py-8 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200 my-2">
+            <span className="text-3xl block mb-2">💳</span>
+            <div className="font-bold text-sm text-slate-600">No recharge transactions yet</div>
+            <div className="text-xs text-slate-400 mt-1">Recharge history will appear here.</div>
+          </div>
+        )}
+      </div>
+
+      {/* RECHARGE SHORTCUT BUTTON */}
+      <div className="mt-4 pt-2 border-t border-slate-100 flex justify-end">
+        <button
+          type="button"
+          onClick={() => {
+            setOpenMenu(null);
+            setShowRechargeModal(true);
+          }}
+          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 via-purple-600 to-orange-400 text-white font-black text-xs shadow-md cursor-pointer"
+        >
+          ⚡ Recharge Now
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
       {false && openMenu === 'profileEditor' && (
         <div className="fixed inset-0 z-[95] bg-[#17215a]/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOpenMenu(null)}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[30px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef8ff] border border-white shadow-2xl p-5 md:p-7" onClick={(e) => e.stopPropagation()}>
@@ -3471,24 +3872,162 @@ function AarshApp() {
         </div>
       )}
 
-      {faqOpen && (
-        <div className="fixed inset-0 z-[95] bg-[#17215a]/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setFaqOpen(false)}>
-          <div className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-[30px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef8ff] border border-white shadow-2xl p-5 md:p-7" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-5"><div><h3 className="text-2xl md:text-3xl font-black text-[#102965]">Help & FAQ</h3><p className="text-xs text-[#63749e] mt-1">10 quick answers for Aarsh Digital creators</p></div><button onClick={() => setFaqOpen(false)} className="text-2xl text-slate-400">×</button></div>
-            <div className="space-y-2">{FAQ_ITEMS.map(([q,a], i) => <details key={i} className="group bg-white border border-slate-100 rounded-2xl p-4"><summary className="cursor-pointer font-black text-[#102965]">{i+1}. {q}</summary><p className="text-sm text-[#63749e] mt-2 leading-6">{a}</p></details>)}</div>
+     {faqOpen && (
+  <div className="fixed inset-0 z-[99999] bg-[#17215a]/50 backdrop-blur-sm flex items-center justify-center p-3 md:p-6" onClick={() => setFaqOpen(false)}>
+    <div className="w-full max-w-lg max-h-[85vh] rounded-[26px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef8ff] border border-white shadow-2xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      
+      {/* HEADER: TITLE + CLOSE (✕) BUTTON */}
+      <div className="p-4 bg-gradient-to-r from-[#7c3aed] via-[#ec4899] to-[#3b82f6] text-white flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">❓</span>
+          <div>
+            <div className="font-black text-sm md:text-base">Help &amp; FAQ</div>
+            <div className="text-[10px] text-white/80">Frequently Asked Questions</div>
           </div>
         </div>
-      )}
+        <button
+          type="button"
+          onClick={() => setFaqOpen(false)}
+          className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-lg font-bold cursor-pointer transition"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* FAQ QUESTIONS LIST */}
+      <div className="p-4 overflow-y-auto space-y-2.5 max-h-[calc(85vh-80px)]">
+        {FAQ_ITEMS.map(([q, a], idx) => (
+          <details key={idx} className="group rounded-2xl bg-white border border-slate-100 p-3 shadow-sm open:bg-purple-50/40 transition">
+            <summary className="font-black text-xs md:text-sm text-[#102965] cursor-pointer list-none flex items-center justify-between gap-2">
+              <span>▶ {idx + 1}. {q}</span>
+              <span className="text-purple-600 transition group-open:rotate-90">›</span>
+            </summary>
+            <div className="mt-2 pt-2 border-t border-slate-100 text-xs text-[#526388] leading-relaxed">
+              {a}
+            </div>
+          </details>
+        ))}
+      </div>
+
+    </div>
+  </div>
+)}
 
       {liveChatOpen && (
-        <div className="fixed inset-0 z-[96] bg-[#17215a]/35 backdrop-blur-sm flex items-end md:items-center justify-center md:justify-end p-3 md:p-8" onClick={() => setLiveChatOpen(false)}>
-          <div className="w-full md:w-[410px] h-[min(650px,90vh)] rounded-[30px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef8ff] border border-white shadow-2xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+       <div className="fixed inset-0 z-[99999] bg-[#17215a]/50 backdrop-blur-sm flex items-center justify-center p-3 md:p-6" onClick={() => setLiveChatOpen(false)}>
+  <div className="w-full max-w-md h-[min(600px,85vh)] rounded-[26px] bg-gradient-to-br from-white via-[#faf7ff] to-[#eef8ff] border border-white shadow-2xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="p-4 bg-gradient-to-r from-[#7c3aed] via-[#ec4899] to-[#3b82f6] text-white flex justify-between items-center"><div><div className="font-black text-xl">Aarsh Digital Live Chat</div><div className="text-xs opacity-90">Support: 8 A.M. – 8 P.M.</div></div><button onClick={() => setLiveChatOpen(false)} className="text-2xl">×</button></div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">{liveChatMessages.map((m,i) => <div key={i} className={`flex ${m.from === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[82%] px-4 py-3 rounded-2xl text-sm ${m.from === 'user' ? 'bg-gradient-to-r from-fuchsia-500 to-blue-500 text-white' : 'bg-white border border-slate-100 text-[#102965]'}`}>{m.text}</div></div>)}</div>
             <div className="p-3 border-t border-slate-100 bg-white/90 flex gap-2"><input value={liveChatText} onChange={e => setLiveChatText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendLiveChat(); }} placeholder="Type your message..." className="flex-1 p-3 rounded-2xl border border-slate-200 outline-none" /><button onClick={sendLiveChat} className="px-4 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-blue-500 text-white font-black">Send</button></div>
           </div>
         </div>
       )}
+
+      {/* =========================================================
+            PROFESSIONAL SETTINGS MODAL
+            ========================================================= */}
+        {showSettingsModal && (
+          <div 
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-3 md:p-6 bg-slate-900/65 backdrop-blur-sm"
+            onClick={() => setShowSettingsModal(false)}
+          >
+            <div 
+              className="relative bg-white w-full max-w-lg max-h-[90vh] rounded-[28px] shadow-2xl border border-slate-100 p-5 md:p-7 overflow-y-auto text-left"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* TOP HEADER */}
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl font-bold">⚙</span>
+                  <div>
+                    <h3 className="text-lg font-black text-[#102965]">Account Settings</h3>
+                    <p className="text-[11px] text-slate-400 font-semibold">Security, Preferences &amp; Account Control</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* 1. AARSH ID BADGE */}
+              <div className="mt-4 p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 flex items-center justify-between">
+                <div>
+                  <small className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aarsh Digital ID</small>
+                  <strong className="text-sm font-black text-[#5b21b6]">{profileForm.aarshId || 'AARSH - 001'}</strong>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black">● Active Account</span>
+              </div>
+
+              {/* 2. CHANGE 4-DIGIT PIN */}
+              <div className="mt-5 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-base">🔒</span>
+                  <b className="text-xs font-black text-[#102965]">Change 4-Digit Login PIN</b>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-3">Apne account ki security ke liye naya 4-digit PIN yahan set karein.</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="New 4-Digit PIN"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white font-black text-center tracking-[0.3em] outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    disabled={pinChangeLoading}
+                    onClick={handlePinUpdate}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black text-xs shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {pinChangeLoading ? "Updating..." : "Update PIN"}
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. NOTIFICATION PREFERENCES */}
+              <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <div className="flex items-center justify-between">
+                  <div className="pr-3">
+                    <b className="block text-xs font-black text-[#102965]">App Notifications &amp; Alerts</b>
+                    <small className="text-[10px] text-slate-400">Recharge updates aur poster generation ke alerts</small>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNotifyAlerts(!notifyAlerts)}
+                    className={`w-12 h-6 rounded-full transition-all relative ${notifyAlerts ? 'bg-purple-600' : 'bg-slate-300'}`}
+                  >
+                    <span className={`block w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${notifyAlerts ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* 4. DANGER ZONE (DELETE ACCOUNT) */}
+              <div className="mt-5 p-4 rounded-2xl border border-red-200 bg-red-50/50">
+                <div className="flex items-center gap-2 text-red-600">
+                  <span className="text-base">⚠️</span>
+                  <b className="text-xs font-black">Danger Zone</b>
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1 mb-3">
+                  Account delete karne se aapke points, posters aur profile data permanently hat jayenge.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-sm cursor-pointer transition"
+                >
+                  Delete My Account Permanently
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
 
       {/* RECHARGE MODAL */}
 
@@ -3780,4 +4319,3 @@ export default function App() {
   if (leaderStyleMode) return <LeaderStyleDemo />;
   return calibrationMode ? <CalibrationStandalone /> : <AarshApp />;
 }
-

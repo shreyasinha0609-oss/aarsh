@@ -6064,3 +6064,1940 @@ body,
     0 22px 50px rgba(139, 92, 246, 0.55),
     0 0 35px rgba(236, 72, 153, 0.50);
 }
+/* ==========================================
+   AARSH DIGITAL — LOGIN RESPONSIVENESS
+   Add at the end of App.css
+   ========================================== */
+
+@media (max-width: 1024px) {
+  .aarsh-auth-viewport {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .aarsh-auth-container {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
+    gap: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .aarsh-auth-viewport {
+    min-height: 100svh;
+    padding: 76px 16px 24px;
+    justify-content: flex-start;
+  }
+
+  .aarsh-auth-top-tag {
+    top: 16px;
+    right: 16px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+
+  .aarsh-auth-container {
+    width: 100%;
+    max-width: 520px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .aarsh-auth-hero {
+    align-items: center;
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  .aarsh-hero-brand-badge {
+    justify-content: center;
+    gap: 9px;
+    margin-bottom: 10px;
+  }
+
+  .aarsh-hero-3d-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  .aarsh-auth-viewport input,
+  .aarsh-auth-viewport select,
+  .aarsh-auth-viewport textarea,
+  .aarsh-auth-viewport button {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .aarsh-auth-viewport {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .aarsh-auth-top-tag {
+    font-size: 8px;
+  }
+
+  .aarsh-hero-brand-badge {
+    flex-wrap: wrap;
+  }
+}
+/* =========================================
+   AARSH DIGITAL — MOBILE LOGIN FIX
+   Only mobile layout changes
+   ========================================= */
+
+@media (max-width: 760px) {
+  .aarsh-auth-viewport {
+    min-height: 100svh;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    justify-content: flex-start;
+    align-items: stretch;
+    padding: 64px 12px 24px;
+  }
+
+  .aarsh-auth-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    gap: 14px;
+  }
+
+  /* Login card ko sabse pehle dikhao */
+  .aarsh-auth-form-side {
+    order: 1;
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Showcase ko login ke neeche rakho */
+  .aarsh-auth-hero {
+    order: 2;
+    width: 100%;
+    min-width: 0;
+    padding: 8px 0 0;
+  }
+
+  .aarsh-auth-top-tag {
+    top: 12px;
+    right: 12px;
+    font-size: 8px;
+    letter-spacing: 0.06em;
+  }
+
+  .aarsh-auth-card {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 22px 18px 20px;
+    border-radius: 24px;
+    box-sizing: border-box;
+  }
+
+  .aarsh-card-brand {
+    margin-bottom: 10px;
+  }
+
+  .aarsh-card-header {
+    margin-bottom: 16px;
+  }
+
+  /* Google aur normal login buttons */
+  .aarsh-google-auth-btn,
+  .aarsh-main-login-btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  /* Username aur PIN/password fields */
+  .aarsh-input-field {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .aarsh-input-field input {
+    width: 100%;
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  /* Mobile par bada decorative section hide karo */
+  .aarsh-auth-hero .aarsh-hero-copy,
+  .aarsh-auth-hero .aarsh-features-strip,
+  .aarsh-auth-hero .aarsh-podium-showcase,
+  .aarsh-auth-hero .aarsh-trust-bar {
+    display: none;
+  }
+
+  .aarsh-login-footer {
+    margin-top: 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  .aarsh-auth-viewport {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .aarsh-auth-card {
+    padding: 18px 14px;
+    border-radius: 20px;
+  }
+
+  .aarsh-auth-top-tag {
+    font-size: 7px;
+  }
+}
+/* ============================================
+   AARSH DIGITAL — FINAL MOBILE LOGIN FIX
+   ============================================ */
+
+@media (max-width: 760px) {
+
+  .aarsh-auth-viewport {
+    min-height: 100svh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding: 58px 12px 24px !important;
+  }
+
+  .aarsh-auth-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    min-width: 0 !important;
+    margin: 0 auto !important;
+    grid-template-columns: none !important;
+  }
+
+  /* Login form sabse pehle */
+  .aarsh-auth-container > .aarsh-auth-form-side {
+    order: 1 !important;
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Showcase login ke neeche */
+  .aarsh-auth-container > .aarsh-auth-hero {
+    order: 2 !important;
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 8px 0 0 !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  /* Full-width login card */
+  .aarsh-auth-form-side .aarsh-auth-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 auto !important;
+    padding: 22px 18px 20px !important;
+    border-radius: 24px !important;
+    box-sizing: border-box !important;
+  }
+
+  .aarsh-auth-card .aarsh-card-brand {
+    display: block !important;
+    margin-bottom: 12px !important;
+  }
+
+  .aarsh-auth-card .aarsh-card-header h2 {
+    font-size: clamp(21px, 6vw, 27px) !important;
+    line-height: 1.15 !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+  }
+
+  .aarsh-auth-card .aarsh-card-header span {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Google login button */
+  .aarsh-auth-card .aarsh-google-auth-btn {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 50px !important;
+    padding: 0 12px !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+
+  .aarsh-auth-card .aarsh-google-auth-btn strong {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Username and PIN fields */
+  .aarsh-auth-card .aarsh-input-field {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 50px !important;
+    box-sizing: border-box !important;
+  }
+
+  .aarsh-auth-card .aarsh-input-field input {
+    flex: 1 1 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    font-size: 16px !important;
+  }
+
+  .aarsh-auth-card .aarsh-main-login-btn {
+    width: 100% !important;
+    min-height: 50px !important;
+  }
+
+  /* Unnecessary decorative content hide on mobile */
+  .aarsh-auth-hero .aarsh-hero-copy,
+  .aarsh-auth-hero .aarsh-features-strip,
+  .aarsh-auth-hero .aarsh-podium-showcase,
+  .aarsh-auth-hero .aarsh-trust-bar {
+    display: none !important;
+  }
+
+  .aarsh-viewport .aarsh-login-footer {
+    width: 100% !important;
+    margin-top: 16px !important;
+  }
+}
+
+@media (max-width: 420px) {
+
+  .aarsh-auth-viewport {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .aarsh-auth-card .aarsh-google-auth-btn {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    gap: 7px !important;
+  }
+
+  .aarsh-auth-card .aarsh-google-auth-btn strong {
+    font-size: 12px !important;
+  }
+}
+/* ============================================
+   AARSH DIGITAL — FINAL MOBILE LOGIN LAYOUT
+   ============================================ */
+
+@media (max-width: 760px) {
+
+  .aarsh-auth-viewport {
+    min-height: 100svh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    padding: 18px 12px 24px !important;
+  }
+
+  .aarsh-auth-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+    width: 100% !important;
+    max-width: 520px !important;
+    min-width: 0 !important;
+    margin: 0 auto !important;
+    grid-template-columns: none !important;
+  }
+
+  /* Login form first */
+  .aarsh-auth-container > .aarsh-auth-form-side {
+    order: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Showcase below the login form */
+  .aarsh-auth-container > .aarsh-auth-hero {
+    order: 2 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+  }
+
+  /* Remove duplicate logo from the showcase */
+  .aarsh-auth-hero .aarsh-hero-brand-badge {
+    display: none !important;
+  }
+
+  /* Keep only one Aarsh logo, inside the login card */
+  .aarsh-auth-form-side .aarsh-card-brand {
+    display: block !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Full-width login card */
+  .aarsh-auth-form-side .aarsh-auth-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 20px 18px !important;
+    border-radius: 24px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Keep the tagline compact */
+  .aarsh-auth-top-tag {
+    position: static !important;
+    width: 100% !important;
+    margin: 0 auto 10px !important;
+    padding: 0 !important;
+    text-align: center !important;
+    font-size: 9px !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .aarsh-auth-top-line {
+    margin: 5px auto 0 !important;
+  }
+
+  /* Prevent login heading from breaking awkwardly */
+  .aarsh-auth-card .aarsh-card-header h2 {
+    font-size: clamp(21px, 6vw, 27px) !important;
+    line-height: 1.2 !important;
+    word-break: normal !important;
+  }
+
+  /* Google button */
+  .aarsh-auth-card .aarsh-google-auth-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 50px !important;
+    padding: 0 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 9px !important;
+  }
+
+  .aarsh-auth-card .aarsh-google-auth-btn strong {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Username and password/PIN inputs */
+  .aarsh-auth-card .aarsh-input-field {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .aarsh-auth-card .aarsh-input-field input {
+    flex: 1 1 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    font-size: 16px !important;
+  }
+
+  .aarsh-auth-card .aarsh-main-login-btn {
+    width: 100% !important;
+  }
+
+  /* SHOW THE FIVE CREATIVE CARDS AGAIN */
+  .aarsh-auth-hero .aarsh-hero-copy {
+    display: none !important;
+  }
+
+  .aarsh-auth-hero .aarsh-features-strip {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    max-width: 420px !important;
+    gap: 8px !important;
+    margin: 8px auto 16px !important;
+  }
+
+  .aarsh-auth-hero .aarsh-podium-showcase {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+    margin: 8px auto 16px !important;
+    overflow: visible !important;
+  }
+
+  .aarsh-auth-hero .aarsh-cards-row {
+    display: flex !important;
+    width: 100% !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
+    gap: 5px !important;
+    margin-bottom: -12px !important;
+  }
+
+  .aarsh-auth-hero .showcase-card {
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .aarsh-auth-hero .card-welcome,
+  .aarsh-auth-hero .card-motivation {
+    width: clamp(44px, 14vw, 70px) !important;
+    height: clamp(72px, 21vw, 108px) !important;
+  }
+
+  .aarsh-auth-hero .card-success,
+  .aarsh-auth-hero .card-festival {
+    width: clamp(48px, 15vw, 76px) !important;
+    height: clamp(80px, 24vw, 120px) !important;
+  }
+
+  .aarsh-auth-hero .card-rank-main {
+    width: clamp(62px, 19vw, 96px) !important;
+    height: clamp(94px, 28vw, 140px) !important;
+  }
+
+  .aarsh-auth-hero .aarsh-pedestal-base {
+    display: flex !important;
+    width: 90% !important;
+    max-width: 400px !important;
+  }
+
+  /* Keep the decorative trust bar hidden on small screens */
+  .aarsh-auth-hero .aarsh-trust-bar {
+    display: none !important;
+  }
+}
+
+@media (max-width: 420px) {
+
+  .aarsh-auth-viewport {
+    padding: 14px 9px 20px !important;
+  }
+
+  .aarsh-auth-form-side .aarsh-auth-card {
+    padding: 18px 13px !important;
+  }
+
+  .aarsh-auth-card .aarsh-google-auth-btn {
+    gap: 6px !important;
+    padding: 0 7px !important;
+  }
+
+  .aarsh-auth-card .aarsh-google-auth-btn strong {
+    font-size: 12px !important;
+  }
+}
+/* ============================================
+   AARSH DIGITAL — MOBILE LOGIN ONLY
+   Desktop remains unchanged
+   ============================================ */
+
+@media (max-width: 760px) {
+
+  /* Reduce empty space above the login form */
+  .aarsh-auth-viewport {
+    min-height: 100svh !important;
+    height: auto !important;
+    padding: 12px 12px 20px !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  /* Keep a single-column login layout */
+  .aarsh-auth-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    min-width: 0 !important;
+    gap: 0 !important;
+    margin: 0 auto !important;
+  }
+
+  /* Hide the complete showcase, including all five auth cards */
+  .aarsh-auth-container > .aarsh-auth-hero {
+    display: none !important;
+  }
+
+  /* Keep only the login form */
+  .aarsh-auth-container > .aarsh-auth-form-side {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Compact tagline above the login card */
+  .aarsh-auth-form-side .aarsh-auth-top-tag {
+    position: static !important;
+    width: 100% !important;
+    margin: 0 auto 10px !important;
+    padding: 0 !important;
+    text-align: center !important;
+    font-size: 9px !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .aarsh-auth-form-side .aarsh-auth-top-line {
+    margin: 5px auto 0 !important;
+  }
+
+  /* Full-width login card */
+  .aarsh-auth-form-side .aarsh-auth-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 22px 16px !important;
+    box-sizing: border-box !important;
+    border-radius: 24px !important;
+  }
+
+  /* Keep the logo only inside the login card */
+  .aarsh-auth-card .aarsh-card-brand {
+    display: block !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Make login heading fit properly */
+  .aarsh-auth-card .aarsh-card-header h2 {
+    font-size: clamp(21px, 6vw, 27px) !important;
+    line-height: 1.2 !important;
+    word-break: normal !important;
+  }
+
+  /* Google Login button */
+  .aarsh-auth-card .aarsh-google-auth-btn {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 50px !important;
+    padding: 0 10px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  .aarsh-auth-card .aarsh-google-auth-btn strong {
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Username and password/PIN fields */
+  .aarsh-auth-card .aarsh-input-field {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .aarsh-auth-card .aarsh-input-field input {
+    flex: 1 1 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    font-size: 16px !important;
+  }
+
+  .aarsh-auth-card .aarsh-main-login-btn {
+    width: 100% !important;
+  }
+
+  /* Hide footer and social media logos on mobile login only */
+  .aarsh-auth-viewport .aarsh-login-footer,
+  .aarsh-auth-viewport .aarsh-common-footer {
+    display: none !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .aarsh-auth-viewport {
+    padding: 10px 9px 16px !important;
+  }
+
+  .aarsh-auth-form-side .aarsh-auth-card {
+    padding: 18px 13px !important;
+  }
+}
+/* =========================================================
+   AARSH DIGITAL — MOBILE LOGIN CLEANUP
+   Mobile only. Desktop and other app screens unchanged.
+   ========================================================= */
+
+@media screen and (max-width: 760px) {
+  /* Keep the login page within the mobile viewport */
+  .aarsh-auth-viewport {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100svh !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Show the login form without the promotional showcase */
+  .aarsh-auth-viewport .aarsh-auth-hero {
+    display: none !important;
+  }
+
+  /* Keep the login section full width */
+  .aarsh-auth-viewport .aarsh-auth-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    width: 100% !important;
+    max-width: 460px !important;
+    min-width: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    gap: 0 !important;
+  }
+
+  .aarsh-auth-viewport .aarsh-auth-form-side {
+    display: flex !important;
+    order: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Prevent the login card from overflowing */
+  .aarsh-auth-viewport .aarsh-auth-card {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Hide social-media logos and footer content on mobile */
+  .aarsh-auth-viewport .aarsh-login-footer {
+    display: none !important;
+  }
+
+  /* Keep all form controls inside the screen */
+  .aarsh-auth-viewport input,
+  .aarsh-auth-viewport select,
+  .aarsh-auth-viewport textarea,
+  .aarsh-auth-viewport button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Small mobile screens */
+@media screen and (max-width: 420px) {
+  .aarsh-auth-viewport {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .aarsh-auth-viewport .aarsh-auth-container {
+    max-width: 100% !important;
+  }
+
+  .aarsh-auth-viewport .aarsh-auth-card {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+}
+/* =========================================================
+   AARSH DIGITAL — MOBILE DASHBOARD REFINEMENT
+   Mobile only; preserve desktop styling and functionality.
+   ========================================================= */
+
+@media screen and (max-width: 560px) {
+
+  /* Prevent horizontal overflow on the dashboard */
+  .aarsh-app-shell,
+  .aarsh-dashboard,
+  .aarsh-dashboard-container {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .aarsh-dashboard-container {
+    width: calc(100% - 20px) !important;
+    margin: 10px auto 24px !important;
+  }
+
+  /* Compact header branding */
+  .aarsh-main-header {
+    width: calc(100% - 16px) !important;
+    max-width: 100% !important;
+    margin: 6px auto 0 !important;
+    border-radius: 17px !important;
+  }
+
+  .aarsh-header-top {
+    gap: 7px !important;
+    padding: 7px 9px !important;
+  }
+
+  .aarsh-brand-area {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    gap: 7px !important;
+  }
+
+  .aarsh-brand-area img {
+    width: 39px !important;
+    height: 39px !important;
+  }
+
+  .aarsh-brand-copy {
+    min-width: 0 !important;
+    margin-left: 4px !important;
+  }
+
+  .aarsh-brand-copy h1 {
+    font-size: clamp(20px, 5.5vw, 27px) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.8px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .aarsh-brand-copy p {
+    margin-top: 4px !important;
+    font-size: 7px !important;
+    letter-spacing: 1.5px !important;
+  }
+
+  /* Keep header action buttons aligned and compact */
+  .aarsh-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-bottom: 2px !important;
+  }
+
+  .aarsh-points-display {
+    min-width: 0 !important;
+    padding: 7px 9px !important;
+    flex: 1 1 auto !important;
+  }
+
+  .aarsh-recharge-btn {
+    min-height: 38px !important;
+    padding: 8px 11px !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+  }
+
+  .aarsh-notification-btn {
+    width: 39px !important;
+    min-width: 39px !important;
+    min-height: 39px !important;
+    flex: 0 0 39px !important;
+  }
+
+  .aarsh-profile-btn {
+    min-width: 0 !important;
+    min-height: 39px !important;
+    padding: 4px 7px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .aarsh-profile-avatar {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  /* Compact navigation without removing any options */
+  .aarsh-secondary-nav {
+    gap: 3px !important;
+    padding: 5px 7px !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .aarsh-secondary-nav button {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    padding: 9px 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Welcome card: reduce excessive spacing */
+  .aarsh-dashboard-hero {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 20px 17px !important;
+    gap: 16px !important;
+    border-radius: 21px !important;
+  }
+
+  .aarsh-dashboard-hero h1 {
+    max-width: 100% !important;
+    font-size: clamp(29px, 8vw, 36px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -1px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .aarsh-dashboard-hero p {
+    margin: 10px 0 14px !important;
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+  }
+
+  .aarsh-primary-cta {
+    max-width: 100% !important;
+    min-height: 46px !important;
+    padding: 12px 17px !important;
+    font-size: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Statistics: balanced two-column grid */
+  .aarsh-dashboard-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 9px !important;
+  }
+
+  .aarsh-stat-card {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    min-height: 76px !important;
+    padding: 11px !important;
+    border-radius: 15px !important;
+  }
+
+  .aarsh-stat-card strong {
+    font-size: 21px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .aarsh-stat-card span {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Creative Studio section */
+  .aarsh-section-title {
+    margin: 20px 2px 12px !important;
+    gap: 8px !important;
+  }
+
+  .aarsh-section-title h2 {
+    font-size: clamp(21px, 6vw, 25px) !important;
+    line-height: 1.25 !important;
+  }
+
+  .aarsh-studio-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .aarsh-studio-card {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 15px !important;
+    border-radius: 19px !important;
+  }
+
+  .aarsh-studio-card h3 {
+    font-size: 15px !important;
+    line-height: 1.35 !important;
+  }
+
+  .aarsh-studio-card p {
+    min-height: 0 !important;
+    margin: 9px 0 12px !important;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+
+  .aarsh-studio-icon {
+    width: 43px !important;
+    height: 43px !important;
+    margin-bottom: 9px !important;
+  }
+
+  .aarsh-maintenance {
+    min-height: 42px !important;
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    white-space: normal !important;
+  }
+}
+
+/* Extra-small phones */
+@media screen and (max-width: 380px) {
+
+  .aarsh-dashboard-container {
+    width: calc(100% - 16px) !important;
+  }
+
+  .aarsh-dashboard-hero {
+    padding: 17px 14px !important;
+  }
+
+  .aarsh-header-top {
+    padding: 6px !important;
+  }
+
+  .aarsh-recharge-btn {
+    padding-inline: 8px !important;
+    font-size: 11px !important;
+  }
+
+  .aarsh-stat-card {
+    padding: 9px !important;
+  }
+
+  .aarsh-studio-card {
+    padding: 13px !important;
+  }
+}
+/* ==========================================
+   AARSH DIGITAL - MOBILE DASHBOARD FIX
+   ========================================== */
+
+@media screen and (max-width: 560px) {
+
+  /* Welcome section: reduce unnecessary height */
+  .aarsh-mobile-hero {
+    min-height: 0 !important;
+    border-radius: 22px !important;
+  }
+
+  .aarsh-mobile-hero-inner {
+    min-height: 0 !important;
+    padding: 22px 17px !important;
+    gap: 12px !important;
+  }
+
+  .aarsh-mobile-hero-inner h1 {
+    font-size: clamp(30px, 8vw, 38px) !important;
+    line-height: 1.1 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .aarsh-mobile-hero-inner h2 {
+    font-size: 19px !important;
+    line-height: 1.4 !important;
+  }
+
+  .aarsh-mobile-hero-inner p {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+    margin-top: 10px !important;
+  }
+
+  .aarsh-mobile-hero-inner button {
+    min-height: 46px !important;
+    padding: 12px 18px !important;
+    font-size: 14px !important;
+    margin-top: 16px !important;
+  }
+
+  /* Statistics: balanced 2-column layout */
+  .aarsh-mobile-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+
+  .aarsh-mobile-stats > div {
+    min-width: 0 !important;
+    gap: 8px !important;
+    padding: 9px 4px !important;
+  }
+
+  .aarsh-mobile-stats > div > span {
+    font-size: 23px !important;
+  }
+
+  .aarsh-mobile-stats > div > div > div:first-child {
+    font-size: 19px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .aarsh-mobile-stats > div > div > div:last-child {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Creative Studio heading */
+  .aarsh-mobile-studio-title {
+    margin-top: 20px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .aarsh-mobile-studio-title h2 {
+    font-size: 23px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Creative Studio cards */
+  .aarsh-mobile-studio-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .aarsh-mobile-studio-card {
+    min-height: 0 !important;
+    padding: 15px !important;
+    border-radius: 19px !important;
+  }
+
+  .aarsh-mobile-studio-card > div:first-child > div:first-child {
+    width: 46px !important;
+    height: 46px !important;
+    font-size: 27px !important;
+  }
+
+  .aarsh-mobile-studio-card h3 {
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+  }
+
+  .aarsh-mobile-studio-card p {
+    margin-top: 11px !important;
+    margin-bottom: 12px !important;
+    font-size: 12px !important;
+    line-height: 1.55 !important;
+  }
+
+  .aarsh-mobile-studio-card button {
+    min-height: 43px !important;
+    padding: 11px 8px !important;
+    font-size: 12px !important;
+    white-space: normal !important;
+  }
+}
+/* ============================================
+   AARSH DIGITAL — FINAL MOBILE DASHBOARD FIX
+   ============================================ */
+
+@media screen and (max-width: 560px) {
+
+  /* Main page */
+  .aarsh-page-root {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: clip !important;
+  }
+
+  /* Compact header */
+  .aarsh-top-header {
+    position: relative !important;
+    top: 0 !important;
+    padding: 5px 8px 0 !important;
+  }
+
+  .aarsh-top-header > div {
+    width: 100% !important;
+    border-radius: 20px !important;
+  }
+
+  .aarsh-top-header .relative.min-h-\[72px\] {
+    min-height: 0 !important;
+    padding: 7px !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .aarsh-top-header .relative.min-h-\[72px\] > button:first-child {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .aarsh-top-header .relative.min-h-\[72px\] > button:first-child img {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .aarsh-top-header .relative.min-h-\[72px\] > button:first-child span {
+    font-size: clamp(20px, 5.5vw, 27px) !important;
+    letter-spacing: -1px !important;
+  }
+
+  /* Header action buttons */
+  .aarsh-top-header .ml-auto.flex.items-center {
+    width: 100% !important;
+    margin-left: 0 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+  }
+
+  .aarsh-top-header .ml-auto.flex.items-center > div:first-child {
+    min-width: 0 !important;
+    padding: 7px 9px !important;
+    gap: 6px !important;
+  }
+
+  .aarsh-top-header .ml-auto.flex.items-center > button {
+    padding: 9px 10px !important;
+    font-size: 11px !important;
+  }
+
+  /* Navigation */
+  .aarsh-secondary-header {
+    position: relative !important;
+    top: 0 !important;
+    margin-top: 5px !important;
+    padding: 0 8px !important;
+  }
+
+  .aarsh-secondary-header > div {
+    width: 100% !important;
+  }
+
+  .aarsh-secondary-header nav {
+    justify-content: flex-start !important;
+    gap: 2px !important;
+    padding: 5px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .aarsh-secondary-header nav button {
+    padding: 9px 10px !important;
+    font-size: 11px !important;
+  }
+
+  /* Dashboard content */
+  .aarsh-page-root main.max-w-\[1500px\] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 12px 24px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Welcome card */
+  .aarsh-mobile-hero {
+    min-height: 0 !important;
+    height: auto !important;
+    border-radius: 22px !important;
+    overflow: hidden !important;
+  }
+
+  .aarsh-mobile-hero-inner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 22px 17px !important;
+    gap: 0 !important;
+    position: relative !important;
+  }
+
+  .aarsh-mobile-hero-inner > div:first-child {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  .aarsh-mobile-hero-inner h1 {
+    margin-top: 5px !important;
+    font-size: clamp(30px, 8vw, 38px) !important;
+    line-height: 1.12 !important;
+  }
+
+  .aarsh-mobile-hero-inner h2 {
+    margin-top: 12px !important;
+    font-size: 19px !important;
+    line-height: 1.4 !important;
+  }
+
+  .aarsh-mobile-hero-inner p {
+    margin: 10px 0 14px !important;
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+  }
+
+  .aarsh-mobile-hero-inner > div:first-child > div.flex.flex-wrap {
+    margin-top: 15px !important;
+    gap: 7px !important;
+  }
+
+  .aarsh-mobile-hero-inner > div:first-child > div.flex.flex-wrap > span {
+    padding: 8px 11px !important;
+    font-size: 11px !important;
+  }
+
+  .aarsh-mobile-hero-inner button {
+    margin-top: 16px !important;
+    padding: 12px 17px !important;
+    min-height: 46px !important;
+    font-size: 14px !important;
+  }
+
+  /* Statistics */
+  .aarsh-mobile-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    margin-top: 12px !important;
+  }
+
+  .aarsh-mobile-stats > div {
+    min-width: 0 !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    padding: 9px 4px !important;
+  }
+
+  /* Creative Studio heading */
+  .aarsh-mobile-studio-title {
+    margin: 20px 2px 12px !important;
+  }
+
+  .aarsh-mobile-studio-title h2 {
+    font-size: 23px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Studio cards */
+  .aarsh-mobile-studio-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .aarsh-mobile-studio-card {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 14px !important;
+    border-radius: 19px !important;
+  }
+
+  .aarsh-mobile-studio-card p {
+    margin: 10px 0 12px !important;
+    line-height: 1.5 !important;
+  }
+
+  .aarsh-mobile-studio-card button {
+    min-height: 42px !important;
+    padding: 10px !important;
+    font-size: 12px !important;
+  }
+}
+/* FIX: Remove extra blank space below mobile navigation */
+
+@media screen and (max-width: 560px) {
+
+  /* Keep mobile header and navigation compact */
+  .aarsh-top-header,
+  .aarsh-secondary-header {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  /* Remove unnecessary gap before dashboard content */
+  .aarsh-page-root main.max-w-\[1500px\] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  /* Remove excessive empty height from welcome card */
+  .aarsh-mobile-hero {
+    height: auto !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .aarsh-mobile-hero-inner {
+    height: auto !important;
+    min-height: 0 !important;
+    padding-top: 20px !important;
+    padding-bottom: 20px !important;
+    align-content: start !important;
+  }
+
+  /* Keep hero content at the top */
+  .aarsh-mobile-hero-inner > div:first-child {
+    align-self: start !important;
+    margin-top: 0 !important;
+  }
+}
+/* FIX: Mobile welcome content hidden behind blank hero */
+
+@media screen and (max-width: 560px) {
+  .aarsh-mobile-hero {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .aarsh-mobile-hero-inner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 20px 17px !important;
+    position: relative !important;
+    z-index: 10 !important;
+  }
+
+  .aarsh-mobile-hero-inner > div:first-child {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    z-index: 11 !important;
+  }
+
+  .aarsh-mobile-hero-inner > div:first-child h1,
+  .aarsh-mobile-hero-inner > div:first-child h2,
+  .aarsh-mobile-hero-inner > div:first-child p,
+  .aarsh-mobile-hero-inner > div:first-child button {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+/* =====================================================
+   AARSH MOBILE SUPPORT — VIEWPORT POSITION FIX
+   Desktop styling remains unchanged
+   ===================================================== */
+
+/* =====================================================
+   AARSH MOBILE SUPPORT MENU
+   Compact dropdown directly below the Support button
+   ===================================================== */
+
+.aarsh-mobile-support-wrap {
+  display: none;
+}
+
+@media screen and (max-width: 767px) {
+
+  .aarsh-mobile-support-wrap {
+    display: block !important;
+    position: relative !important;
+    flex: 0 0 auto !important;
+    z-index: 10001 !important;
+  }
+
+  /* Support trigger button */
+  .aarsh-mobile-support-trigger {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+
+    padding: 9px 10px !important;
+    min-height: 38px !important;
+
+    border: 1px solid #e5e7f5 !important;
+    border-radius: 12px !important;
+
+    background: #ffffff !important;
+    color: #102967 !important;
+
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+
+    box-shadow: 0 4px 12px rgba(40, 50, 120, 0.10) !important;
+    cursor: pointer !important;
+  }
+
+  /* Dropdown position */
+  .aarsh-mobile-support-menu {
+    display: block !important;
+
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+
+    left: 0 !important;
+    right: auto !important;
+
+    width: min(310px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+
+    max-height: min(65dvh, 470px) !important;
+
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+
+    padding: 10px 13px !important;
+    margin: 0 !important;
+
+    box-sizing: border-box !important;
+
+    border: 1px solid #e4e8f8 !important;
+    border-radius: 20px !important;
+
+    background: #ffffff !important;
+
+    box-shadow: 0 18px 42px rgba(35, 45, 110, 0.22) !important;
+
+    z-index: 10002 !important;
+
+    scrollbar-width: thin !important;
+  }
+
+  /* Customer Support heading */
+  .aarsh-mobile-support-heading {
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+
+    padding: 5px 0 11px !important;
+    margin-bottom: 3px !important;
+
+    border-bottom: 1px solid #edf0fa !important;
+
+    color: #102965 !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+  }
+
+  .aarsh-mobile-support-head-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 37px !important;
+    height: 37px !important;
+    flex: 0 0 37px !important;
+
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #f0abfc, #bfdbfe) !important;
+
+    font-size: 19px !important;
+  }
+
+  .aarsh-mobile-support-heading-text {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+  }
+
+  .aarsh-mobile-support-heading-text strong {
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    color: #102965 !important;
+  }
+
+  .aarsh-mobile-support-heading-text small {
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    color: #64749b !important;
+  }
+
+  .aarsh-mobile-support-heading > button {
+    margin-left: auto !important;
+    padding: 2px 5px !important;
+
+    border: 0 !important;
+    background: transparent !important;
+
+    color: #7c89a8 !important;
+    font-size: 23px !important;
+    line-height: 1 !important;
+
+    cursor: pointer !important;
+  }
+
+  /* Individual options */
+  .aarsh-mobile-support-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+
+    width: 100% !important;
+    min-height: 53px !important;
+
+    padding: 7px 1px !important;
+    margin: 0 !important;
+
+    border: 0 !important;
+    border-bottom: 1px solid #edf0fa !important;
+    border-radius: 0 !important;
+
+    background: transparent !important;
+    color: #102965 !important;
+
+    text-align: left !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+
+    box-shadow: none !important;
+    cursor: pointer !important;
+
+    box-sizing: border-box !important;
+  }
+
+  .aarsh-mobile-support-item:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .aarsh-mobile-support-item:active {
+    background: #f5f3ff !important;
+  }
+
+  /* Circular icons */
+  .aarsh-mobile-support-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 37px !important;
+    height: 37px !important;
+    flex: 0 0 37px !important;
+
+    border-radius: 50% !important;
+    background: #f0f2ff !important;
+
+    font-size: 18px !important;
+  }
+
+  /* Option text */
+  .aarsh-mobile-support-item > span:nth-child(2) {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+
+    overflow-wrap: anywhere !important;
+    color: #102965 !important;
+  }
+
+  /* Right arrow */
+  .aarsh-mobile-support-arrow {
+    flex: 0 0 auto !important;
+
+    color: #8190b5 !important;
+    font-size: 22px !important;
+    font-weight: 400 !important;
+  }
+}
+/* AARSH DIGITAL — MOBILE SUPPORT DROPDOWN FIX */
+
+.aarsh-mobile-support-wrap {
+  position: relative !important;
+}
+
+.aarsh-mobile-support-menu {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  left: 0 !important;
+  right: auto !important;
+
+  width: min(320px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - 150px) !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  z-index: 9999 !important;
+  border-radius: 22px !important;
+}
+
+.aarsh-mobile-support-menu button {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+@media (min-width: 768px) {
+  .aarsh-mobile-support-wrap {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .aarsh-mobile-support-wrap {
+    display: block !important;
+  }
+}
+/* =========================================================
+   AARSH DIRECT SUPPORT DROPDOWN (Button ke theek neeche 5 options)
+   ========================================================= */
+.aarsh-direct-support-dropdown {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  width: 290px !important;
+  max-width: calc(100vw - 20px) !important;
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 40px rgba(16, 41, 103, 0.18) !important;
+  padding: 8px !important;
+  z-index: 99999 !important;
+  box-sizing: border-box !important;
+}
+
+.aarsh-support-menu-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  padding: 8px 10px !important;
+  margin-bottom: 4px !important;
+  background: #ffffff !important;
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 14px !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.aarsh-support-menu-row:last-child {
+  margin-bottom: 0 !important;
+}
+
+.aarsh-support-menu-row:hover,
+.aarsh-support-menu-row:active {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  transform: translateY(-1px) !important;
+}
+
+.aarsh-support-menu-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 17px !important;
+  flex-shrink: 0 !important;
+}
+
+.aarsh-support-menu-text {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.aarsh-support-menu-text b {
+  display: block !important;
+  color: #102967 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.aarsh-support-menu-text small {
+  display: block !important;
+  color: #64748b !important;
+  font-size: 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.aarsh-support-online-badge {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #16a34a !important;
+  background: #dcfce7 !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
+}
+
+.aarsh-support-arrow-tag {
+  font-size: 18px !important;
+  color: #94a3b8 !important;
+  font-weight: 700 !important;
+}
+/* =========================================================
+   AARSH TOP SUPPORT DROPDOWN (Direct below Logo Support button)
+   ========================================================= */
+.aarsh-top-support-dropdown {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  width: 290px !important;
+  max-width: calc(100vw - 24px) !important;
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 40px rgba(16, 41, 103, 0.20) !important;
+  padding: 8px !important;
+  z-index: 99999 !important;
+  box-sizing: border-box !important;
+}
+
+.aarsh-support-menu-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  padding: 8px 10px !important;
+  margin-bottom: 4px !important;
+  background: #ffffff !important;
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 14px !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.aarsh-support-menu-row:last-child {
+  margin-bottom: 0 !important;
+}
+
+.aarsh-support-menu-row:hover,
+.aarsh-support-menu-row:active {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  transform: translateY(-1px) !important;
+}
+
+.aarsh-support-menu-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 17px !important;
+  flex-shrink: 0 !important;
+}
+
+.aarsh-support-menu-text {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.aarsh-support-menu-text b {
+  display: block !important;
+  color: #102967 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.aarsh-support-menu-text small {
+  display: block !important;
+  color: #64748b !important;
+  font-size: 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.aarsh-support-online-badge {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #16a34a !important;
+  background: #dcfce7 !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
+}
+
+.aarsh-support-arrow-tag {
+  font-size: 18px !important;
+  color: #94a3b8 !important;
+  font-weight: 700 !important;
+}
+/* =========================================================
+   AARSH RANK PROMOTION — REMOVE OUTER WHITE CARD ON MOBILE
+   ========================================================= */
+@media screen and (max-width: 768px) {
+  /* Agar container ke andar rank banner ya rank section hai, toh baahar ka white box transparent hoga */
+  div:has(> .cs-rank-section),
+  div:has(> * > .cs-rank-full-banner-wrap),
+  .aarsh-main-card:has(.cs-rank-section),
+  .aarsh-dashboard-container:has(.cs-rank-section) {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+/* =========================================================
+   AARSH RANK PROMOTION — REMOVE MOBILE WHITE CONTAINER BOX
+   ========================================================= */
+@media screen and (max-width: 768px) {
+  /* Main wrapper containers holding the creative studio */
+  main:has(.cs-rank-section),
+  section:has(.cs-rank-section),
+  div:has(> .cs-rank-section) {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+}

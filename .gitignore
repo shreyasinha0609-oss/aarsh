@@ -22,3 +22,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local build output
+dist/
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
+# Local backups and temporary notes
+src/App_backup.jsx
+src/App.jsx.before-standalone-fix
+*.txt
+
+# Standalone testing page
+standalone_static/
