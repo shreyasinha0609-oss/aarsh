@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { removeBackground } from '@imgly/background-removal';
+import { auth } from '../firebase';
+import { getOptimizedImagePath } from '../imageUtils.js';
 import './CreativeStudio.css';
 
 const MAX_BANNER_PEOPLE = 22;
 const RANK_TEMPLATE_COUNT = 45;
-const RANK_TEMPLATE_BASE = '/templates/rank-common-4k';
+const RANK_TEMPLATE_BASE = '/optimized-images/rank-common-4k';
 const WELCOME_TEMPLATE_COUNT = 11;
 const WELCOME_TEMPLATE_BASE = '/templates/welcome';
 const CLOSING_TEMPLATE_COUNT = 11;
@@ -12,18 +13,70 @@ const CLOSING_TEMPLATE_BASE = '/templates/closing';
 
 const getRankTemplateUrl = (no) => {
   const padded = String(no).padStart(2, '0');
-  return `${RANK_TEMPLATE_BASE}/${padded}.jpeg`;
+  return `${RANK_TEMPLATE_BASE}/${padded}.webp`;
+};
+
+// 🎯 Har category ke liye possible candidate file paths (1-11 sab load honge)
+const getTemplateCandidates = (category, no) => {
+  const num = String(no);
+  const padded = num.padStart(2, '0');
+
+  if (category === 'welcome' || category === 'closing') {
+    const base = category === 'welcome'
+      ? WELCOME_TEMPLATE_BASE
+      : CLOSING_TEMPLATE_BASE;
+
+    return Array.from(new Set([
+      `${base}/${num}.jpg`,
+      `${base}/${padded}.jpg`,
+      `${base}/${num}.jpeg`,
+      `${base}/${padded}.jpeg`,
+      `${base}/${num}.png`,
+      `${base}/${padded}.png`
+    ]));
+  }
+
+  return [
+    `${RANK_TEMPLATE_BASE}/${padded}.webp`,
+    `${RANK_TEMPLATE_BASE}/${padded}.png`,
+    `${RANK_TEMPLATE_BASE}/${padded}.jpeg`,
+    `${RANK_TEMPLATE_BASE}/${padded}.jpg`,
+    `${RANK_TEMPLATE_BASE}/${num}.webp`,
+    `${RANK_TEMPLATE_BASE}/${num}.png`,
+    `${RANK_TEMPLATE_BASE}/${num}.jpeg`,
+    `${RANK_TEMPLATE_BASE}/${num}.jpg`
+  ];
 };
 
 const getCategoryTemplateUrl = (category, no) => {
-  if (category === 'welcome') {
-    return `${WELCOME_TEMPLATE_BASE}/${no}.jpg`;
-  }
-  if (category === 'closing') {
-    return `${CLOSING_TEMPLATE_BASE}/${no}.jpg`;
-  }
-  return getRankTemplateUrl(no);
+  return getTemplateCandidates(category, no)[0];
 };
+
+// 🎯 Auto-Fallback Image Component: Jo bhi extension hogi bina atke load kar lega
+function SmartTemplateImage({ category, no, alt, className, style }) {
+  const candidates = getTemplateCandidates(category, no);
+  const [currIndex, setCurrIndex] = useState(0);
+
+  useEffect(() => {
+    setCurrIndex(0);
+  }, [category, no]);
+
+  return (
+    <img
+      key={`${category}-${no}-${currIndex}`}
+      src={candidates[currIndex]}
+      alt={alt}
+      className={className}
+      style={style}
+      loading="eager"
+      decoding="sync"
+      draggable="false"
+      onError={() => {
+        setCurrIndex((prev) => (prev + 1 < candidates.length ? prev + 1 : prev));
+      }}
+    />
+  );
+}
 
 const RANK_INCOME = {
   Bronze: '₹2,500', Silver: '₹7,500', Gold: '₹15,000', Platinum: '₹32,000',
@@ -75,16 +128,19 @@ const RANK_ASSETS = [
   'Brand_Ambassador.png'
 ];
 
-const RANK_OPTIONS = RANKS.map((label, index) => ({
-  id: label,
-  label: label.replace(/^Rank\s+\d+:\s*/, ''),
-  rank: index + 1,
-  theme: RANK_THEMES[index],
-  image: `/rank-assets/${RANK_ASSETS[index]}`
-}));
+const RANK_OPTIONS = RANKS.map((label, index) => {
+  const originalImage = `/rank-assets/${RANK_ASSETS[index]}`;
+
+  return {
+    id: label,
+    label: label.replace(/^Rank\s+\d+:\s*/, ''),
+    rank: index + 1,
+    theme: RANK_THEMES[index],
+    image: getOptimizedImagePath(originalImage)
+  };
+});
 
 const STORAGE_KEY = 'aarsh-creative-banner-settings-v1';
-const WELCOME_CUSTOM_COORDS_KEY = 'aarsh-welcome-closing-custom-coords-v1';
 
 const readSettings = () => {
   try {
@@ -138,7 +194,6 @@ const fileToDataUrl = (file, maxSide = 1200) => new Promise((resolve) => {
   reader.readAsDataURL(file);
 });
 
-// REFERENCE CANVASES
 const REFERENCE_CANVAS_RANK = { w: 896, h: 1344 };
 const REFERENCE_CANVAS_SQUARE = { w: 1600, h: 1600 };
 
@@ -154,76 +209,86 @@ const FINAL_COORDS = {
   leaderRankBottom:  { x: 195, y: 1098, w: 430, h: 25, size: 18 },
   leaderPhotoBottom: { x: 583, y: 619, w: 270, h: 510 },
   leaderPhone:       { x: 122, y: 1171, w: 160, h: 25, size: 21 },
-  uplinesRow:        { x: 186, y: 28,  w: 440, h: 24, size: 30 },
+  uplinesRow:        { x: 186, y: 26,  w: 440, h: 34, size: 34 },
   asclepias:         { x: 5,   y: 2,   w: 170, h: 80 },
   fighterLogo:       { x: 627, y: 18,  w: 132, h: 50 },
   fighterText:       { x: 749, y: 8,   w: 150, h: 57 }
 };
 
-// 🎯 EXACT LOCKED COORDINATES FOR WELCOME & CLOSING BANNERS (1600 x 1600)
-export const DEFAULT_WELCOME_CLOSING_COORDS = {
+// 🎯 WELCOME BANNER COORDINATES (1600 x 1600)
+export const WELCOME_COORDS = {
   uplinesRow: {
-    x: 295,
-    y: 15,
+    x: 315,
+    y: 20,
     w: 945,
-    h: 95,
-    size: 58
+    h: 72,
+    size: 72
   },
   achieverPhoto: {
-    x: 0,
-    y: 0,
-    w: 740,
-    h: 980
+    x: 25,
+    y: 260,
+    w: 710,
+    h: 720
   },
   achieverName: {
     x: 650,
-    y: 480,
+    y: 607,
     w: 860,
-    h: 315,
-    size: 45
+    h: 65,
+    size: 46
   },
   achieverCity: {
-    x: 715,
-    y: 630,
-    w: 740,
-    h: 110,
-    size: 44
+    x: 650,
+    y: 670,
+    w: 860,
+    h: 50,
+    size: 42
   },
   leaderPhotoBottom: {
-    x: 1035,
-    y: 1040,
-    w: 725,
-    h: 535
+    x: 1140,
+    y: 1120,
+    w: 540,
+    h: 450
   },
   leaderNameBottom: {
     x: 560,
-    y: 1400,
-    w: 595,
-    h: 80,
-    size: 49
+    y: 1410,
+    w: 620,
+    h: 55,
+    size: 46
   },
   leaderRankBottom: {
-    x: 625,
-    y: 1445,
-    w: 445,
-    h: 110,
+    x: 560,
+    y: 1475,
+    w: 620,
+    h: 40,
     size: 32
   },
   leaderPhone: {
-    x: 100,
-    y: 1460,
-    w: 475,
-    h: 70,
+    x: 224,
+    y: 1477,
+    w: 220,
+    h: 50,
     size: 44
   }
 };
 
-const readWelcomeCoords = () => {
-  try {
-    const raw = localStorage.getItem(WELCOME_CUSTOM_COORDS_KEY);
-    return raw ? { ...DEFAULT_WELCOME_CLOSING_COORDS, ...JSON.parse(raw) } : DEFAULT_WELCOME_CLOSING_COORDS;
-  } catch {
-    return DEFAULT_WELCOME_CLOSING_COORDS;
+// 🎯 CLOSING BANNER SPECIAL COORDINATES (1600 x 1600) — ACHIVER NAME & CITY ALAG
+export const CLOSING_COORDS = {
+  ...WELCOME_COORDS,
+  achieverName: {
+    x: 650,          // Closing ke hisaab se Name X position
+    y: 545,          // Closing ke hisaab se Name Y position (Alag position)
+    w: 860,
+    h: 70,
+    size: 48
+  },
+  achieverCity: {
+    x: 650,          // Closing ke hisaab se City X position
+    y: 615,          // Closing ke hisaab se City Y position (Alag position)
+    w: 860,
+    h: 50,
+    size: 40
   }
 };
 
@@ -259,19 +324,22 @@ function ReferenceTemplatePreview({
   activePhotoStyle,
   banner,
   profile,
-  onActiveLeaderPhotoChange,
-  welcomeCoords
+  onActiveLeaderPhotoChange
 }) {
-  const isDirectCategory = category === 'welcome' || category === 'closing';
-  const coords = isDirectCategory ? welcomeCoords : FINAL_COORDS;
-  const refDims = isDirectCategory ? REFERENCE_CANVAS_SQUARE : REFERENCE_CANVAS_RANK;
+  const isRankPromotion = category === 'rank-promotion' || (!['welcome', 'closing'].includes(category));
+  const coords = isRankPromotion 
+    ? FINAL_COORDS 
+    : (category === 'closing' ? CLOSING_COORDS : WELCOME_COORDS);
+  const refDims = isRankPromotion ? REFERENCE_CANVAS_RANK : REFERENCE_CANVAS_SQUARE;
 
   const achFullName = [achieverDetails?.salutation, achieverDetails?.firstName, achieverDetails?.lastName]
     .filter(Boolean)
     .join(' ');
   const achCity = achieverDetails?.teamCity || '';
 
-  const achImg = achieverDetails?.removedUrl || achieverDetails?.originalUrl || '';
+  const achImg = activePhotoStyle === 'original'
+    ? (achieverDetails?.originalUrl || '')
+    : (achieverDetails?.removedUrl || achieverDetails?.originalUrl || '');
 
   const leaderName = [profile?.title, profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || profile?.name || '';
   const rawRole = profile?.role || profile?.rank || '';
@@ -331,33 +399,23 @@ function ReferenceTemplatePreview({
       ? Math.round(coords.amount.size * 0.88) 
       : coords.amount.size) : 24;
 
-  const bgImageUrl = isDirectCategory
-    ? getCategoryTemplateUrl(category, template)
-    : getRankTemplateUrl(template);
+  const avatarPercentSize = (coords.uplinesRow.h / refDims.w) * 100;
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div 
-        className={`cs-reference-preview ${isDirectCategory ? 'is-square-preview' : ''}`}
-        style={isDirectCategory ? { aspectRatio: '1 / 1', maxWidth: '520px', position: 'relative' } : { position: 'relative' }}
+        className={`cs-reference-preview ${!isRankPromotion ? 'is-square-preview' : ''}`}
+        style={!isRankPromotion ? { aspectRatio: '1 / 1', position: 'relative' } : { position: 'relative' }}
       >
-        <img
-          className="cs-reference-preview-bg"
-          src={bgImageUrl}
+        <SmartTemplateImage
+          category={category}
+          no={template}
           alt={`Template ${template}`}
-          loading="eager"
-          decoding="sync"
-          onError={e => {
-            const currentSrc = e.currentTarget.src;
-            if (currentSrc.endsWith('.jpeg')) {
-              e.currentTarget.src = currentSrc.replace('.jpeg', '.jpg');
-            } else if (currentSrc.endsWith('.jpg')) {
-              e.currentTarget.src = currentSrc.replace('.jpg', '.png');
-            }
-          }}
+          className="cs-reference-preview-bg"
         />
 
-        {!isDirectCategory && banner?.asclepiasLogo && (
+        {/* LOGOS FOR RANK PROMOTION */}
+        {isRankPromotion && banner?.asclepiasLogo && (
           <img className="cs-ref-asset" style={{ ...refBox(coords.asclepias, refDims.w, refDims.h), objectFit: 'contain', zIndex: 20 }} src={banner.asclepiasLogo} alt="" />
         )}
 
@@ -380,8 +438,8 @@ function ReferenceTemplatePreview({
                 key={i}
                 className="cs-upline-avatar-wrap"
                 style={{
-                  width: `${(coords.uplinesRow.h / refDims.h) * 100}cqw`,
-                  height: `${(coords.uplinesRow.h / refDims.h) * 100}cqw`,
+                  width: `${avatarPercentSize}cqw`,
+                  height: `${avatarPercentSize}cqw`,
                   borderRadius: '50%',
                   overflow: 'hidden'
                 }}
@@ -397,7 +455,7 @@ function ReferenceTemplatePreview({
           })}
         </div>
 
-        {!isDirectCategory && banner?.fighterSuccessSystem !== false && banner?.fighterLogo && (
+        {isRankPromotion && banner?.fighterSuccessSystem !== false && banner?.fighterLogo && (
           <img
             className="cs-ref-asset"
             style={{ ...refBox(coords.fighterLogo, refDims.w, refDims.h), objectFit: 'contain', zIndex: 20 }}
@@ -406,7 +464,7 @@ function ReferenceTemplatePreview({
           />
         )}
 
-        {!isDirectCategory && banner?.fighterTextSystem !== false && banner?.fighterStudio && (
+        {isRankPromotion && banner?.fighterTextSystem !== false && banner?.fighterStudio && (
           <img
             className="cs-ref-asset"
             style={{ ...refBox(coords.fighterText, refDims.w, refDims.h), objectFit: 'contain', zIndex: 20 }}
@@ -441,6 +499,31 @@ function ReferenceTemplatePreview({
           </div>
         )}
 
+        {/* 🎯 RANK DETAILS (BRONZE, DS RANK, AMOUNT) — ONLY IN RANK PROMOTION */}
+        {isRankPromotion && (
+          <>
+            <div 
+              className="cs-3d-gold-rank-title" 
+              style={refText({ ...coords.rank, size: dynamicRankSize }, "'Merienda', cursive, sans-serif", '#ffd700', 900, {}, refDims.w, refDims.h)}
+            >
+              {rankText}
+            </div>
+
+            <div style={refText(coords.dsRank, "'Averia Serif Libre', cursive, serif", '#ffffff', 900, {
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.9), 0 4px 8px rgba(0, 0, 0, 0.6)'
+            }, refDims.w, refDims.h)}>
+              DS RANK
+            </div>
+
+            <div 
+              className="cs-3d-gold-amount" 
+              style={refText({ ...coords.amount, size: dynamicAmountSize }, "'Times New Roman', Georgia, serif", '#ffd700', 900, {}, refDims.w, refDims.h)}
+            >
+              {amount}
+            </div>
+          </>
+        )}
+
         {/* LEADER PHOTO CUTOUT */}
         {activeLeaderPhoto && (
           <div style={{ 
@@ -454,46 +537,28 @@ function ReferenceTemplatePreview({
         )}
 
         {/* LEADER NAME */}
-        <div style={refText(coords.leaderNameBottom, "'Merriweather', Georgia, serif", '#ffffff', 900, attractiveShadow, refDims.w, refDims.h)}>
+        <div style={refText(coords.leaderNameBottom, "'Merriweather', Georgia, serif", isRankPromotion ? '#0f172a' : '#ffffff', 900, !isRankPromotion ? attractiveShadow : {}, refDims.w, refDims.h)}>
           {leaderName.toUpperCase()}
         </div>
 
         {/* LEADER RANK */}
-        <div style={refText(coords.leaderRankBottom, "'Montserrat', sans-serif", '#facc15', 900, attractiveShadow, refDims.w, refDims.h)}>
+        <div style={refText(coords.leaderRankBottom, "'Montserrat', sans-serif", isRankPromotion ? '#c4ae31' : '#facc15', 900, !isRankPromotion ? attractiveShadow : {}, refDims.w, refDims.h)}>
           {leaderRankDisplay}
         </div>
 
         {/* LEADER PHONE NUMBER */}
         {banner?.showContactOnBanners !== false && leaderPhone && (
-          <div style={refText(coords.leaderPhone, "'Montserrat', sans-serif", '#ffffff', 900, {
-            textShadow: '0 2px 4px rgba(0, 0, 0, 0.9)'
+          <div style={refText(coords.leaderPhone, "'Montserrat', sans-serif", isRankPromotion ? '#000000' : '#ffffff', 500, {
+            textShadow: isRankPromotion ? '0 1px 3px rgba(0, 0, 0, 0.4)' : '0 2px 4px rgba(0, 0, 0, 0.9)'
           }, refDims.w, refDims.h)}>
             {leaderPhone}
           </div>
         )}
       </div>
 
-      {/* LEADER PHOTO PICKER STRIP */}
+      {/* LEADER PHOTO PICKER STRIP — ONLY PROFILE PHOTOS */}
       <div className="cs-leader-picker-box">
-        <div className="cs-leader-picker-header">
-          <span><i aria-hidden="true">♙</i> Choose Leader Photo for Template</span>
-          <small>{profileImagesList.length} photos from My Profile</small>
-        </div>
         <div className="cs-leader-picker-strip">
-          <label className="cs-leader-upload-tile">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                await addTemporaryLeaderPhoto(file);
-                event.target.value = '';
-              }}
-              disabled={allLeaderPhotos.length >= 15}
-            />
-            <span className="cs-leader-upload-icon">＋</span>
-            <b>Upload Photo</b>
-          </label>
           {allLeaderPhotos.map((imgUrl, idx) => (
             <button
               key={`${idx}-${String(imgUrl).slice(0, 18)}`}
@@ -507,24 +572,7 @@ function ReferenceTemplatePreview({
               {selectedLeaderImgIndex === idx && <span className="cs-thumb-check">✓</span>}
             </button>
           ))}
-          <label className={`cs-leader-upload-tile cs-leader-add-tile ${allLeaderPhotos.length >= 15 ? 'is-disabled' : ''}`}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                await addTemporaryLeaderPhoto(file);
-                event.target.value = '';
-              }}
-              disabled={allLeaderPhotos.length >= 15}
-            />
-            <span className="cs-leader-upload-icon">＋</span>
-            <b>Add More</b>
-            <small>Up to 15</small>
-          </label>
-          {allLeaderPhotos.length === 0 && <p className="cs-leader-empty-note">No profile photos found. Upload a photo to preview it on the template.</p>}
         </div>
-        {extraLeaderPhotos.length > 0 && <small className="cs-leader-temp-note">Extra photos are available for this design session; upload them to My Profile if you want to keep them there.</small>}
       </div>
     </div>
   );
@@ -532,7 +580,7 @@ function ReferenceTemplatePreview({
 
 const rankName = (rank) => rank.replace(/^Rank\s+\d+:\s*/, '');
 
-export default function CreativeStudio({ onBack, initialSettingsOpen = false, profile = null }) {
+export default function CreativeStudio({ onBack, initialSettingsOpen = false, profile = null, onPointsChange = null }) {
   const [studioTab, setStudioTab] = useState('categories');
   const [selectedRank, setSelectedRank] = useState(null);
   const [activeCategory, setActiveCategory] = useState('rank-promotion');
@@ -566,18 +614,8 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
   const [savedMessage, setSavedMessage] = useState('');
   const [achieverDetailsView, setAchieverDetailsView] = useState(false);
   const [achieverDetails, setAchieverDetails] = useState({ salutation: 'Mr.', firstName: '', lastName: '', teamCity: '', originalUrl: '', removedUrl: '' });
-  const [backgroundRemovalBusy, setBackgroundRemovalBusy] = useState(false);
   
-  // Custom Live Coordinates state for Welcome & Closing
-  const [welcomeCoords, setWelcomeCoords] = useState(readWelcomeCoords());
-
-  const handleUpdateWelcomeCoords = (newCoords) => {
-    setWelcomeCoords(newCoords);
-    try {
-      localStorage.setItem(WELCOME_CUSTOM_COORDS_KEY, JSON.stringify(newCoords));
-    } catch { /* storage safeguard */ }
-  };
-
+  const [achieverPhotoLoading, setAchieverPhotoLoading] = useState(false);
   const [activePhotoStyle, setActivePhotoStyle] = useState('cutout');
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [cropAspect, setCropAspect] = useState('portrait');
@@ -676,43 +714,36 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
   const selectedRankTheme = selectedRankOption?.theme || 'rp-bronze';
   const selectedRankIndex = selectedRankOption?.rank || 1;
 
+  const executeBgRemoval = async (imageSource) => {
+    try {
+      setAchieverPhotoLoading(true);
+     const { removeBackground } = await import('@imgly/background-removal');
+
+const blob = await removeBackground(imageSource, {
+  output: { format: 'image/png', quality: 0.95 }
+});
+      const removedUrl = await blobToDataUrl(blob);
+      setAchieverDetails(prev => ({ ...prev, removedUrl }));
+      setActivePhotoStyle('cutout');
+    } catch (e) {
+      console.error('BG removal failed:', e);
+      alert('AI background removal complete nahi ho saka, kripya transparent PNG upload karein.');
+    } finally {
+      setAchieverPhotoLoading(false);
+    }
+  };
+
   const handleAchieverImage = async (file) => {
     if (!file) return;
-    if (!file.type?.startsWith('image/')) {
-      alert('Kripya JPG, PNG ya koi valid image upload karein.');
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      alert('Image 15MB se chhoti honi chahiye.');
-      return;
-    }
-
     const localUrl = URL.createObjectURL(file);
     setAchieverDetails(prev => ({ ...prev, originalUrl: localUrl, removedUrl: '' }));
-    setActivePhotoStyle('original');
-    setCropAspect('portrait');
-    setCropZoom(1.15);
-    setCropX(50);
-    setCropY(30);
-    setCropModalOpen(true);
-    setBackgroundRemovalBusy(true);
+    setActivePhotoStyle('cutout');
+    await executeBgRemoval(file);
+  };
 
-    try {
-      const timeout = new Promise((_, reject) =>
-        window.setTimeout(() => reject(new Error('AI background removal timed out')), 60000)
-      );
-      const transparentBlob = await Promise.race([removeBackground(file), timeout]);
-      const transparentUrl = await blobToDataUrl(transparentBlob);
-      if (!transparentUrl) throw new Error('Background remover returned an empty image');
-      setAchieverDetails(prev => ({ ...prev, originalUrl: localUrl, removedUrl: transparentUrl }));
-      setActivePhotoStyle('cutout');
-    } catch (removeError) {
-      console.error('AI background removal failed:', removeError);
-      setAchieverDetails(prev => ({ ...prev, originalUrl: localUrl, removedUrl: localUrl }));
-      setActivePhotoStyle('original');
-    } finally {
-      setBackgroundRemovalBusy(false);
-    }
+  const removeAchieverBackgroundNow = async () => {
+    if (!achieverDetails.originalUrl || achieverPhotoLoading) return;
+    await executeBgRemoval(achieverDetails.originalUrl);
   };
 
   const openPhotoCropper = () => {
@@ -774,6 +805,10 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
       alert('Please enter First Name, Last Name, City and upload an image.');
       return;
     }
+    if (achieverPhotoLoading) {
+      alert('AI background remove kar raha hai, kripya thoda wait karein...');
+      return;
+    }
     setSelectedTemplate(1);
     setShowTemplateActions(false);
     setRankTemplateView(true);
@@ -789,9 +824,15 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
   });
 
   const getExportPosterCanvas = async () => {
-    const isDirectCategory = activeCategory === 'welcome' || activeCategory === 'closing';
-    const coords = isDirectCategory ? welcomeCoords : FINAL_COORDS;
-    const refDims = isDirectCategory ? REFERENCE_CANVAS_SQUARE : REFERENCE_CANVAS_RANK;
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+
+    const isRankPromotion = activeCategory === 'rank-promotion' || (!['welcome', 'closing'].includes(activeCategory));
+    const coords = isRankPromotion 
+      ? FINAL_COORDS 
+      : (activeCategory === 'closing' ? CLOSING_COORDS : WELCOME_COORDS);
+    const refDims = isRankPromotion ? REFERENCE_CANVAS_RANK : REFERENCE_CANVAS_SQUARE;
 
     const canvas = document.createElement('canvas');
     canvas.width = refDims.w;
@@ -799,20 +840,32 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas is not supported in this browser.');
 
-    let backgroundSrc = isDirectCategory
-      ? getCategoryTemplateUrl(activeCategory, selectedTemplate)
-      : getRankTemplateUrl(selectedTemplate);
+    const candidateUrls = getTemplateCandidates(activeCategory, selectedTemplate);
 
     let background = null;
-    const candidates = [backgroundSrc, backgroundSrc.replace('.jpg', '.jpeg'), backgroundSrc.replace('.jpeg', '.jpg')];
-    for (const src of candidates) {
-      try { background = await loadExportImage(src); break; } catch { /* try next */ }
+    for (const src of candidateUrls) {
+      try {
+        background = await loadExportImage(src);
+        if (background) break;
+      } catch {
+        // try next candidate
+      }
     }
-    if (!background) throw new Error('Template image could not be loaded. Please check the template asset path.');
+
+    if (!background) {
+      const previewImgEl = document.querySelector('.cs-reference-preview-bg');
+      if (previewImgEl && previewImgEl.complete && previewImgEl.naturalWidth > 0) {
+        background = previewImgEl;
+      } else {
+        throw new Error('Template image could not be loaded.');
+      }
+    }
+
     ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
     const box = (c) => ({ x: c.x, y: c.y, w: c.w, h: c.h });
-    const drawContain = async (src, c) => {
+
+    const drawContainBottom = async (src, c) => {
       if (!src) return;
       const image = await loadExportImage(src);
       if (!image) return;
@@ -820,9 +873,54 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
       const scale = Math.min(b.w / image.naturalWidth, b.h / image.naturalHeight);
       const w = image.naturalWidth * scale;
       const h = image.naturalHeight * scale;
-      ctx.drawImage(image, b.x + (b.w - w) / 2, b.y + (b.h - h) / 2, w, h);
+      ctx.drawImage(image, b.x + (b.w - w) / 2, b.y + (b.h - h), w, h);
     };
-    const drawText = (text, c, fontFamily, color, weight = 900) => {
+
+    const drawContainCenter = async (src, c) => {
+      if (!src) return;
+      const image = await loadExportImage(src);
+      if (!image) return;
+      const b = box(c);
+      const scale = Math.min(b.w / image.naturalWidth, b.h / image.naturalHeight);
+      const w = image.naturalWidth * scale;
+      const h = image.naturalHeight * scale;
+      ctx.drawImage(image, b.x + (b.w - w) / 2, b.y + (b.h - h), w, h);
+    };
+
+    const draw3DGoldText = (text, c, fontFamily) => {
+      if (!text || !c) return;
+      const b = box(c);
+      const size = c.size || 58;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `900 ${size}px ${fontFamily}`;
+
+      const centerX = b.x + b.w / 2;
+      const centerY = b.y + b.h / 2;
+
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 6;
+
+      const goldGrad = ctx.createLinearGradient(0, b.y, 0, b.y + b.h);
+      goldGrad.addColorStop(0.00, '#ffffff');
+      goldGrad.addColorStop(0.22, '#fef08a');
+      goldGrad.addColorStop(0.55, '#eab308');
+      goldGrad.addColorStop(0.80, '#a16207');
+      goldGrad.addColorStop(1.00, '#451a03');
+
+      ctx.fillStyle = goldGrad;
+      ctx.fillText(text, centerX, centerY, b.w);
+
+      ctx.shadowColor = 'transparent';
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#6d3412';
+      ctx.strokeText(text, centerX, centerY, b.w);
+      ctx.restore();
+    };
+
+    const drawStandardText = (text, c, fontFamily, color, weight = 900) => {
       if (!text || !c) return;
       const b = box(c);
       let size = c.size || 24;
@@ -830,14 +928,10 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = color;
-      ctx.shadowColor = 'rgba(0,0,0,.72)';
-      ctx.shadowBlur = 4;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 6;
       ctx.shadowOffsetY = 2;
-      do {
-        ctx.font = `${weight} ${size}px ${fontFamily}`;
-        if (ctx.measureText(text).width <= b.w - 8) break;
-        size -= 1;
-      } while (size > 8);
+      ctx.font = `${weight} ${size}px ${fontFamily}`;
       ctx.fillText(text, b.x + b.w / 2, b.y + b.h / 2, b.w - 4);
       ctx.restore();
     };
@@ -851,56 +945,129 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
     const role = (profile?.role || profile?.rank || '').replace(/^Rank\s+\d+:\s*/i, '').trim();
     const leaderRank = role ? `${role.toUpperCase()}, AWPL` : 'AWPL';
     const phone = (profile?.mobile || contactNumber || '').replace(/^\+91\s*/, '').trim();
-    const achieverImg = achieverDetails.removedUrl || achieverDetails.originalUrl || '';
+    const achieverImg = activePhotoStyle === 'original' ? (achieverDetails.originalUrl || '') : (achieverDetails.removedUrl || achieverDetails.originalUrl || '');
 
-    // 11 Upline Photos
+    // 🎯 11 Upline Photos: Rank Promotion mein 34px aur Welcome/Closing (1600x1600) mein 72px!
+    const row = coords.uplinesRow;
+    const size = isRankPromotion ? 34 : (coords.uplinesRow.size || 72);
+    const spacing = (row.w - size) / 10;
     for (let i = 0; i < 11; i += 1) {
       const url = people?.[i]?.url;
       if (!url) continue;
-      const row = coords.uplinesRow;
-      const size = Math.min(row.h, row.w / 11);
-      const x = row.x + i * (row.w / 11) + ((row.w / 11) - size) / 2;
+      const x = row.x + i * spacing;
       const y = row.y + (row.h - size) / 2;
       const image = await loadExportImage(url);
+      if (!image) continue;
+
       ctx.save();
-      ctx.beginPath(); ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2); ctx.clip();
+      ctx.beginPath();
+      ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#d4af37';
+      ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+      ctx.shadowBlur = isRankPromotion ? 4 : 8;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(x + size / 2, y + size / 2, (size / 2) - (isRankPromotion ? 1.5 : 3), 0, Math.PI * 2);
+      ctx.clip();
       ctx.drawImage(image, x, y, size, size);
       ctx.restore();
     }
 
-    if (!isDirectCategory) {
-      if (asclepiasLogo) await drawContain(asclepiasLogo, coords.asclepias);
-      if (fighterSuccessSystem && fighterLogo) await drawContain(fighterLogo, coords.fighterLogo);
-      if (fighterTextSystem && fighterStudio) await drawContain(fighterStudio, coords.fighterText);
-      drawText(rankDisplay, coords.rank, 'Georgia, serif', '#ffd700');
-      drawText('DS RANK', coords.dsRank, 'Georgia, serif', '#ffffff');
-      drawText(amount, coords.amount, 'Georgia, serif', '#ffd700');
+    if (isRankPromotion) {
+      if (asclepiasLogo) await drawContainCenter(asclepiasLogo, coords.asclepias);
+      if (fighterSuccessSystem && fighterLogo) await drawContainCenter(fighterLogo, coords.fighterLogo);
+      if (fighterTextSystem && fighterStudio) await drawContainCenter(fighterStudio, coords.fighterText);
+      
+      draw3DGoldText(rankDisplay, coords.rank, "'Merienda', cursive, sans-serif");
+      drawStandardText('DS RANK', coords.dsRank, "'Averia Serif Libre', cursive, serif", '#ffffff', 900);
+      draw3DGoldText(amount, coords.amount, "'Times New Roman', Georgia, serif");
     }
 
-    drawText(achName, coords.achieverNameTop || coords.achieverName, 'Georgia, serif', '#ffffff');
-    drawText(achCity, coords.achieverCityTop || coords.achieverCity, 'Arial, sans-serif', '#ffd700');
-    if (achieverImg) await drawContain(achieverImg, coords.achieverPhotoTop || coords.achieverPhoto);
+    drawStandardText(achName, coords.achieverNameTop || coords.achieverName, "'Merriweather', Georgia, serif", '#ffffff', 900);
+    drawStandardText(achCity, coords.achieverCityTop || coords.achieverCity, "'Montserrat', Arial, sans-serif", '#ffd700', 800);
+    
+    if (achieverImg) await drawContainBottom(achieverImg, coords.achieverPhotoTop || coords.achieverPhoto);
+    if (activeLeaderPhoto) await drawContainBottom(activeLeaderPhoto, coords.leaderPhotoBottom);
 
-    if (activeLeaderPhoto) await drawContain(activeLeaderPhoto, coords.leaderPhotoBottom);
-    drawText(profileName.toUpperCase(), coords.leaderNameBottom, 'Georgia, serif', '#ffffff');
-    drawText(leaderRank, coords.leaderRankBottom, 'Arial, sans-serif', '#facc15');
-    if (showContactOnBanners && phone) drawText(phone, coords.leaderPhone, 'Arial, sans-serif', '#ffffff');
+    drawStandardText(profileName.toUpperCase(), coords.leaderNameBottom, "'Merriweather', Georgia, serif", isRankPromotion ? '#0f172a' : '#ffffff', 900);
+    drawStandardText(leaderRank, coords.leaderRankBottom, "'Montserrat', Arial, sans-serif", isRankPromotion ? '#c4ae31' : '#facc15', 900);
+    if (showContactOnBanners && phone) drawStandardText(phone, coords.leaderPhone, "'Montserrat', Arial, sans-serif", isRankPromotion ? '#000000' : '#ffffff', 500);
 
     return canvas;
   };
 
+  // Securely deduct 5 credits from the signed-in user's Firestore balance.
+  const chargeDownloadCredits = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        alert('Please log in again before downloading.');
+        return false;
+      }
+
+      const idToken = await currentUser.getIdToken();
+      const requestId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+      const response = await fetch('https://aarsh.onrender.com/deduct-credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken, requestId })
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        alert(result.message || 'Credits could not be verified. Please try again.');
+        return false;
+      }
+
+      const updatedCredits = Number(result.credits);
+      if (!Number.isFinite(updatedCredits)) {
+        alert('Could not verify your updated balance. Please refresh and check your account.');
+        return false;
+      }
+
+      if (typeof onPointsChange === 'function') onPointsChange(updatedCredits);
+      window.dispatchEvent(new CustomEvent('pointsUpdated', {
+        detail: { points: updatedCredits, credits: updatedCredits }
+      }));
+      return true;
+    } catch (error) {
+      console.error('Credit deduction failed:', error);
+      alert('Unable to verify credits. Please try again.');
+      return false;
+    }
+  };
+
   const downloadCanvasImage = async () => {
+    if (exportBusy) return;
     setExportBusy(true);
     try {
+      // Prepare the image before charging credits.
       const canvas = await getExportPosterCanvas();
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((result) => result ? resolve(result) : reject(new Error('Could not prepare image for download.')), 'image/png');
+      });
+
+      const charged = await chargeDownloadCredits();
+      if (!charged) return;
+
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
+      link.href = url;
       link.download = `Aarsh-${activeCategory.toUpperCase()}-Template-${String(selectedTemplate).padStart(2, '0')}.png`;
-      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
       link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 3000);
     } catch (error) {
       console.error('Poster image download failed:', error);
       alert(error.message || 'Image download failed. Please try again.');
-    } finally { setExportBusy(false); }
+    } finally {
+      setExportBusy(false);
+    }
   };
 
   const canvasToPdfBlob = (canvas) => {
@@ -940,20 +1107,30 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
   };
 
   const downloadPosterPdf = async () => {
+    if (exportBusy) return;
     setExportBusy(true);
     try {
+      // Prepare the PDF before charging credits.
       const canvas = await getExportPosterCanvas();
       const blob = canvasToPdfBlob(canvas);
+
+      const charged = await chargeDownloadCredits();
+      if (!charged) return;
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `Aarsh-${activeCategory.toUpperCase()}-Template-${String(selectedTemplate).padStart(2, '0')}.pdf`;
+      document.body.appendChild(link);
       link.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 3000);
     } catch (error) {
       console.error('Poster PDF download failed:', error);
       alert(error.message || 'PDF download failed. Please try again.');
-    } finally { setExportBusy(false); }
+    } finally {
+      setExportBusy(false);
+    }
   };
 
   const printPoster = async () => {
@@ -1561,7 +1738,7 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                       onError={e => { e.currentTarget.style.display = 'none'; }}
                     />
                     <div className={item.isRank ? 'cs-rank-featured-info' : 'cs-cat-details-col'}>
-                      <div className={item.isRank ? 'cs-rank-featured-top-row' : ''}>
+                      <div className="cs-cat-top-row">
                         <h4 style={{ margin: 0 }}>{item.label}</h4>
                         {isReady && <span className="cs-badge-available">✔ AVAILABLE</span>}
                       </div>
@@ -1745,7 +1922,7 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                       </div>
                       <div className="badge-item">
                         <div className="badge-icon-box purple-badge">🖼️</div>
-                        <b>Instant Cutout<br />Framing</b>
+                        <b>AI Background<br />Remover</b>
                       </div>
                       <div className="badge-item">
                         <div className="badge-icon-box blue-badge">HD</div>
@@ -1765,35 +1942,28 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                       </div>
                       <div className="card-head-texts">
                         <h3>Achiever Photo</h3>
-                        <p>Upload photo (Instant 1-second focus crop)</p>
+                        <p>Upload photo (Client-side AI Background Removal)</p>
                       </div>
                       <button
                         type="button"
                         className="ai-remover-tag-btn"
-                        onClick={openPhotoCropper}
-                        disabled={!achieverDetails.originalUrl}
+                        onClick={removeAchieverBackgroundNow}
+                        disabled={!achieverDetails.originalUrl || achieverPhotoLoading}
                       >
-                        ✂️ Crop Focus
+                        {achieverPhotoLoading ? '⏳ Removing BG...' : '🪄 AI Background Remover'}
                       </button>
                     </div>
 
                     <div className="aarsh-photo-preview-grid">
-                      {backgroundRemovalBusy && (
-                        <div role="status" aria-live="polite" className="cs-background-removal-status" style={{ gridColumn: '1 / -1', padding: '10px 12px', borderRadius: 10, background: '#eef2ff', color: '#3730a3', fontSize: 13, fontWeight: 600 }}>
-                          ✨ AI background remove kar raha hai…
-                        </div>
-                      )}
                       <label className="photo-box upload-original-box">
                         <input 
                           type="file" 
                           accept="image/*" 
                           onChange={e => {
-                            const input = e.currentTarget;
-                            const file = input.files?.[0];
-                            if (file) void handleAchieverImage(file);
-                            input.value = '';
+                            const file = e.target.files?.[0];
+                            if (file) handleAchieverImage(file);
+                            e.target.value = '';
                           }} 
-                          disabled={backgroundRemovalBusy}
                           style={{ display: 'none' }} 
                         />
                         {achieverDetails.originalUrl ? (
@@ -1815,9 +1985,9 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                           <img src={achieverDetails.removedUrl} alt="Cutout" className="uploaded-img-preview" />
                         ) : (
                           <div className="cutout-empty-state">
-                            <span className="sparkle-cutout-icon">✨</span>
-                            <strong className="cutout-title">Cropped Focus</strong>
-                            <small className="cutout-sub">Click here to crop frame</small>
+                            <span className="sparkle-cutout-icon">{achieverPhotoLoading ? '⏳' : '🪄'}</span>
+                            <strong className="cutout-title">{achieverPhotoLoading ? 'AI Cutout in progress…' : 'Background Removed'}</strong>
+                            <small className="cutout-sub">{achieverPhotoLoading ? 'Please wait...' : 'Click to crop frame'}</small>
                           </div>
                         )}
                       </div>
@@ -1836,7 +2006,7 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                         className={`toggle-pill ${activePhotoStyle === 'cutout' ? 'is-selected' : ''}`}
                         onClick={() => setActivePhotoStyle('cutout')}
                       >
-                        <span className="toggle-avatar-icon">✨</span> Cropped Focus
+                        <span className="toggle-avatar-icon">✨</span> Background Removed
                       </button>
                     </div>
                     {(achieverDetails.removedUrl || achieverDetails.originalUrl) && (
@@ -1852,6 +2022,7 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                     type="button"
                     onClick={createAchiever}
                     className="aarsh-glowing-next-btn"
+                    disabled={achieverPhotoLoading}
                   >
                     <span className="next-btn-main">Next</span>
                     <span className="next-arrow">→</span>
@@ -1870,22 +2041,31 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                     setRankTemplateView(false);
                     setAchieverDetailsView(true);
                   }}
+                  aria-label="Back"
                 >
-                  ← Edit Details
+                  ‹
                 </button>
-                <div className="cs-rank-badge">
-                  <span aria-hidden="true">▦</span> {activeTemplateCount} TEMPLATES
-                </div>
+                <span className="cs-mobile-app-header-title">
+                  {activeCategory === 'welcome' 
+                    ? 'COMMON WELCOME' 
+                    : activeCategory === 'closing' 
+                      ? 'CLOSING BANNER' 
+                      : `${selectedRankLabel.toUpperCase()}`}
+                </span>
+                <button 
+                  type="button" 
+                  className="cs-rank-badge" 
+                  onClick={() => setSettingsOpen(true)}
+                  aria-label="Settings"
+                >
+                  ⚙
+                </button>
               </div>
 
               <div className="cs-template-workspace">
                 <div className="cs-template-left-column">
                   <div className="cs-template-featured">
                     <div className="cs-template-featured-card">
-                      <div className="cs-template-preview-toolbar">
-                        <span><b>▦</b> Template {String(selectedTemplate).padStart(2, '0')}</span>
-                        <span className="cs-preview-live-pill">LIVE PREVIEW</span>
-                      </div>
                       <ReferenceTemplatePreview
                         category={activeCategory}
                         template={selectedTemplate}
@@ -1900,126 +2080,64 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                         }}
                         profile={profile}
                         onActiveLeaderPhotoChange={setActiveLeaderPhoto}
-                        welcomeCoords={welcomeCoords}
-                        onUpdateWelcomeCoords={handleUpdateWelcomeCoords}
                       />
-                      <div className="cs-template-featured-meta">
-                        <strong>Template {String(selectedTemplate).padStart(2, '0')}</strong>
-                        <span>
-                          {activeCategory === 'welcome' 
-                            ? 'Welcome Banner AWPL' 
-                            : activeCategory === 'closing' 
-                              ? 'Closing Banner AWPL' 
-                              : `${selectedRankLabel} · ${RANK_INCOME[selectedRankLabel] || 'Custom Amount'}`}
-                        </span>
-                      </div>
                     </div>
                   </div>
-                  <div className="cs-template-left-hint"><span>✦</span> Select any template on the right to preview it here.</div>
+
+                  {/* Image/Video Toggle + Golden Download Button */}
+                  <div className="cs-mobile-quick-actions-strip">
+                    <div className="cs-mobile-mode-pill">
+                      <button type="button" className="cs-mobile-mode-btn is-active">Image</button>
+                      <button type="button" className="cs-mobile-mode-btn" onClick={() => alert('Video templates coming soon!')}>Video</button>
+                    </div>
+                    <button 
+                      type="button" 
+                      className="cs-mobile-big-download-btn"
+                      onClick={downloadCanvasImage}
+                      disabled={exportBusy}
+                    >
+                      {exportBusy ? 'Saving…' : 'Download'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="cs-template-gallery-panel">
-                  <div className="cs-template-gallery-header">
-                    <div className="cs-template-gallery-heading">
-                      <span className="cs-template-gallery-icon" aria-hidden="true">▧</span>
-                      <div><b>Choose Your Template</b><small>Select a template to preview in high quality</small></div>
-                    </div>
-                    <label className="cs-template-search">
-                      <span aria-hidden="true">⌕</span>
-                      <input
-                        type="search"
-                        value={templateSearch}
-                        onChange={(event) => { setTemplateSearch(event.target.value); setTemplatePage(1); }}
-                        placeholder="Search templates..."
-                        aria-label="Search templates"
-                      />
-                      {templateSearch && <button type="button" onClick={() => { setTemplateSearch(''); setTemplatePage(1); }} aria-label="Clear search">×</button>}
-                    </label>
-                  </div>
-
-                  <div className="cs-template-gallery-toolbar">
-                    <span className="cs-template-count-chip">All templates <b>{activeTemplateCount}</b></span>
-                    <span className="cs-template-gallery-tip">Click a card to select</span>
-                  </div>
-
                   {(() => {
                     const isSquareCat = activeCategory === 'welcome' || activeCategory === 'closing';
-                    const matchingTemplates = Array.from({ length: activeTemplateCount }, (_, index) => index + 1)
-                      .filter((no) => !templateSearch.trim() || `template ${String(no).padStart(2, '0')} ${no}`.includes(templateSearch.trim().toLowerCase()));
-                    const pageSize = 12;
-                    const pageCount = Math.max(1, Math.ceil(matchingTemplates.length / pageSize));
-                    const safePage = Math.min(templatePage, pageCount);
-                    const visibleTemplates = matchingTemplates.slice((safePage - 1) * pageSize, safePage * pageSize);
+                    const matchingTemplates = Array.from({ length: activeTemplateCount }, (_, index) => index + 1);
+
                     return (
-                      <>
-                        <div className="cs-template-grid">
-                          {visibleTemplates.map((no) => {
-                            const selected = selectedTemplate === no;
-                            const thumbUrl = isSquareCat
-                              ? getCategoryTemplateUrl(activeCategory, no)
-                              : getRankTemplateUrl(no);
-                            return (
-                              <button
-                                key={no}
-                                type="button"
-                                className={`cs-template-card ${selected ? 'is-selected' : ''}`}
-                                onClick={() => setSelectedTemplate(no)}
-                                aria-label={`Select template ${String(no).padStart(2, '0')}`}
-                                aria-pressed={selected}
+                      <div className="cs-template-grid">
+                        {matchingTemplates.map((no) => {
+                          const selected = selectedTemplate === no;
+                          return (
+                            <button
+                              key={no}
+                              type="button"
+                              className={`cs-template-card ${selected ? 'is-selected' : ''}`}
+                              onClick={() => setSelectedTemplate(no)}
+                              aria-label={`Select template ${String(no).padStart(2, '0')}`}
+                              aria-pressed={selected}
+                            >
+                              <div 
+                                className={`cs-template-thumb-wrap ${isSquareCat ? 'is-square-thumb' : ''}`}
+                                style={isSquareCat ? { aspectRatio: '1 / 1' } : {}}
                               >
-                                <div 
-                                  className={`cs-template-thumb-wrap ${isSquareCat ? 'is-square-thumb' : ''}`}
-                                  style={isSquareCat ? { aspectRatio: '1 / 1' } : {}}
-                                >
-                                  <img
-                                    src={thumbUrl}
-                                    alt={`Template ${String(no).padStart(2, '0')}`}
-                                    loading="lazy"
-                                    draggable="false"
-                                    style={isSquareCat ? { objectFit: 'contain', aspectRatio: '1 / 1' } : {}}
-                                    onError={(event) => {
-                                      const image = event.currentTarget;
-                                      if (image.src.endsWith('.jpeg')) {
-                                        image.src = image.src.replace('.jpeg', '.jpg');
-                                      } else if (image.src.endsWith('.jpg')) {
-                                        image.src = image.src.replace('.jpg', '.png');
-                                      }
-                                    }}
-                                  />
-                                  {selected && <span className="cs-template-selected-check">✓</span>}
-                                </div>
-                                <span className="cs-template-tag">Template {String(no).padStart(2, '0')}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {matchingTemplates.length === 0 ? (
-                          <div className="cs-template-empty-state"><span>⌕</span><b>No templates found</b><small>Try another template number, such as 01 or 05.</small></div>
-                        ) : (
-                          <div className="cs-template-pagination">
-                            <button type="button" className="cs-page-arrow" disabled={safePage === 1} onClick={() => setTemplatePage(Math.max(1, safePage - 1))} aria-label="Previous page">‹</button>
-                            {Array.from({ length: pageCount }, (_, index) => index + 1).map((page) => (
-                              <button key={page} type="button" className={`cs-page-number ${safePage === page ? 'is-active' : ''}`} onClick={() => setTemplatePage(page)} aria-current={safePage === page ? 'page' : undefined}>{page}</button>
-                            ))}
-                            <button type="button" className="cs-page-arrow" disabled={safePage === pageCount} onClick={() => setTemplatePage(Math.min(pageCount, safePage + 1))} aria-label="Next page">›</button>
-                            <span className="cs-page-summary">{matchingTemplates.length ? `${(safePage - 1) * pageSize + 1}–${Math.min(safePage * pageSize, matchingTemplates.length)} of ${matchingTemplates.length}` : '0 results'}</span>
-                          </div>
-                        )}
-                      </>
+                                <SmartTemplateImage
+                                  category={activeCategory}
+                                  no={no}
+                                  alt={`Template ${String(no).padStart(2, '0')}`}
+                                  style={isSquareCat ? { objectFit: 'contain', aspectRatio: '1 / 1' } : {}}
+                                />
+                                {selected && <span className="cs-template-selected-check">✓</span>}
+                              </div>
+                              <span className="cs-template-tag">Template {String(no).padStart(2, '0')}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     );
                   })()}
-                  <div className="cs-template-gallery-actions">
-                    <button
-                      type="button"
-                      className="cs-use-template-btn"
-                      onClick={() => {
-                        setShowTemplateActions(true);
-                        setRatingSaved(false);
-                      }}
-                    >
-                      Select & Download <span aria-hidden="true">→</span>
-                    </button>
-                  </div>
                 </div>
               </div>
             </section>
@@ -2175,13 +2293,10 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
             </header>
             <div className="cs-export-body">
               <div className="cs-export-preview-card">
-                <img 
-                  src={
-                    (activeCategory === 'welcome' || activeCategory === 'closing')
-                      ? getCategoryTemplateUrl(activeCategory, selectedTemplate)
-                      : getRankTemplateUrl(selectedTemplate)
-                  } 
-                  alt={`Selected template ${selectedTemplate}`} 
+                <SmartTemplateImage
+                  category={activeCategory}
+                  no={selectedTemplate}
+                  alt={`Selected template ${selectedTemplate}`}
                 />
                 <div>
                   <b>{[achieverDetails.salutation, achieverDetails.firstName, achieverDetails.lastName].filter(Boolean).join(' ')}</b>

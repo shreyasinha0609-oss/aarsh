@@ -25,7 +25,22 @@ from firebase_admin import credentials, auth, firestore
 
 
 app = Flask(__name__)
-CORS(app)
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "https://www.aarshimage.in",
+                "https://aarshimage.in",
+            ]
+        }
+    },
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    supports_credentials=False,
+)
 
 
 # =========================================================
@@ -1421,6 +1436,76 @@ def generate():
 # =========================================================
 # START SERVER
 # =========================================================
+
+
+# =========================================================
+# CREATIVE STUDIO DOWNLOAD CREDIT DEDUCTION
+# =========================================================
+@app.route("/deduct-credits", methods=["POST", "OPTIONS"])
+def deduct_credits():
+    if request.method == "OPTIONS":
+        return ("", 204)
+
+    try:
+        data = request.get_json(silent=True) or {}
+        decoded_token = verify_firebase_token(data.get("idToken"))
+        uid = decoded_token["uid"]
+        request_id = str(data.get("requestId", "")).strip()
+
+        if not re.fullmatch(r"[a-zA-Z0-9_-]{8,100}", request_id):
+            return jsonify({"success": False, "message": "Invalid request ID."}), 400
+
+        user_ref = firestore_db.collection("users").document(uid)
+        deduction_ref = firestore_db.collection("creditDeductionRequests").document(f"{uid}_{request_id}")
+        transaction = firestore_db.transaction()
+
+        @firestore.transactional
+        def apply_deduction(txn):
+            previous_request = deduction_ref.get(transaction=txn)
+            if previous_request.exists:
+                previous_data = previous_request.to_dict() or {}
+                return {
+                    "success": True,
+                    "credits": int(previous_data.get("creditsAfter", 0)),
+                    "alreadyProcessed": True
+                }
+
+            user_snapshot = user_ref.get(transaction=txn)
+            if not user_snapshot.exists:
+                raise ValueError("User account not found.")
+
+            user_data = user_snapshot.to_dict() or {}
+            try:
+                current_credits = int(user_data.get("credits", user_data.get("points", 0)) or 0)
+            except (TypeError, ValueError):
+                current_credits = 0
+
+            if current_credits < 5:
+                raise ValueError("INSUFFICIENT_CREDITS")
+
+            new_credits = current_credits - 5
+            now = datetime.now(timezone.utc)
+            txn.set(user_ref, {"credits": new_credits, "updatedAt": now}, merge=True)
+            txn.set(deduction_ref, {
+                "uid": uid,
+                "requestId": request_id,
+                "amount": 5,
+                "creditsAfter": new_credits,
+                "createdAt": now
+            })
+            return {"success": True, "credits": new_credits, "alreadyProcessed": False}
+
+        result = apply_deduction(transaction)
+        return jsonify(result), 200
+
+    except ValueError as error:
+        if str(error) == "INSUFFICIENT_CREDITS":
+            return jsonify({"success": False, "message": "Insufficient credits. Please recharge."}), 402
+        return jsonify({"success": False, "message": str(error)}), 400
+    except Exception as error:
+        print("Deduct credits error:", str(error))
+        return jsonify({"success": False, "message": "Unable to process credits. Please try again."}), 500
+
 
 if __name__ == "__main__":
 

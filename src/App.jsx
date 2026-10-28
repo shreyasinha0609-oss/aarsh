@@ -2985,10 +2985,14 @@ function AarshApp() {
         </main>
       ) : appView === "creative" ? (
       <CreativeStudio
-  initialSettingsOpen={creativeSettingsRequested}
-  profile={profileForm}
-  onBack={() => { setCreativeSettingsRequested(false); setAppView("dashboard"); }}
-/>
+        initialSettingsOpen={creativeSettingsRequested}
+        profile={profileForm}
+        onPointsChange={setPoints}
+        onBack={() => {
+          setCreativeSettingsRequested(false);
+          setAppView("dashboard");
+        }}
+      />
       ) : (
         <>
       {/* CUSTOMER STEP PROGRESS */}

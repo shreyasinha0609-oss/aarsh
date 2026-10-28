@@ -1370,7 +1370,7 @@
   aspect-ratio: 896 / 1344 !important;
   margin: 0 auto;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 0 !important; /* 👈 Chaaro corners sharp rectangle ho jayenge */
   background: #050b14;
   container-type: inline-size;
   isolation: isolate;
@@ -1380,7 +1380,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
-
 .cs-reference-preview-bg {
   position: absolute;
   inset: 0;
@@ -2603,13 +2602,14 @@
   font-weight: 1000;
   letter-spacing: .08em;
 }
-.cs-template-featured .cs-reference-preview {
-  width: 100%;
-  max-width: 430px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 12px 28px rgba(29, 18, 66, .20);
-}
+/* 5. COMPACT TEMPLATE PREVIEW */
+  .cs-reference-preview {
+    width: min(72vw, 250px) !important;
+    max-width: 250px !important;
+    margin: 0 auto !important;
+    border-radius: 0 !important; /* 👈 Mobile par bhi chaaro corners sharp rectangle ban jayenge */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7) !important;
+  }
 .cs-template-featured .cs-template-featured-meta {
   padding: 12px 4px 1px;
   gap: 10px;
@@ -3949,4 +3949,535 @@
 .cs-template-thumb-wrap.is-square-thumb img {
   aspect-ratio: 1 / 1 !important;
   object-fit: contain !important;
+}
+.cs-cat-top-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin-bottom: 3px !important;
+}
+/* =========================================================
+   TEMPLATE SELECTION: CLEAN STRIP REMOVAL & 2ND IMAGE MOBILE MATCH
+   ========================================================= */
+
+/* 1. "Template 01" aur "LIVE PREVIEW" strip ko poori tarah hide karein */
+.cs-template-preview-toolbar {
+  display: none !important;
+}
+
+/* 2. Mobile View: Exact 2nd Reference Image layout */
+@media screen and (max-width: 820px) {
+  /* Parent app bars ko hide karein template page par */
+  body:has(.cs-template-page) .aarsh-header,
+  body:has(.cs-template-page) .aarsh-sub-nav,
+  body:has(.cs-template-page) .cs-header,
+  body:has(.cs-template-page) .aarsh-studio-nav {
+    display: none !important;
+  }
+
+  .cs-page:has(.cs-template-page) {
+    padding: 8px 10px 40px !important;
+    background: #0f1026 !important; /* Reference image ka sleek dark theme */
+  }
+
+  .cs-template-page {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  /* Top Navigation Bar: Back arrow + Category Title + Settings */
+  .cs-template-topbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 4px 14px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .cs-mobile-app-header-title {
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: 1000 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+  }
+
+  /* Single Column Flow */
+  .cs-template-workspace {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .cs-template-left-column {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .cs-template-featured-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  /* Canvas Preview: Clean rounded corners without tags */
+  .cs-template-featured .cs-reference-preview {
+    max-width: 100% !important;
+    border-radius: 18px !important;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  .cs-template-left-hint {
+    display: none !important;
+  }
+
+  .cs-template-featured-meta {
+    display: none !important;
+  }
+
+  /* Leader Photo Picker: Dark rounded container under template */
+  .cs-leader-picker-box {
+    margin-top: 10px !important;
+    background: #191838 !important;
+    border: 1px solid #2d2b56 !important;
+    border-radius: 18px !important;
+    padding: 12px !important;
+  }
+
+  .cs-leader-picker-header span {
+    color: #ffffff !important;
+    font-size: 12px !important;
+  }
+
+  .cs-leader-thumb-btn, 
+  .cs-leader-upload-tile {
+    width: 68px !important;
+    height: 76px !important;
+    min-width: 68px !important;
+    flex: 0 0 68px !important;
+    border-radius: 12px !important;
+    background: #25234d !important;
+    border: 1.5px solid #3d3b70 !important;
+  }
+
+  .cs-leader-thumb-btn.is-selected {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 2px #38bdf8 !important;
+  }
+
+  /* Action Buttons Row: Image/Video toggle & Download Button */
+  .cs-mobile-quick-actions-strip {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    margin: 4px 0 10px !important;
+    width: 100% !important;
+  }
+
+  .cs-mobile-mode-pill {
+    display: flex !important;
+    align-items: center !important;
+    background: #222044 !important;
+    border-radius: 999px !important;
+    padding: 3px !important;
+    border: 1px solid #383563 !important;
+  }
+
+  .cs-mobile-mode-btn {
+    border: none !important;
+    background: transparent !important;
+    color: #94a3b8 !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    padding: 7px 16px !important;
+    border-radius: 999px !important;
+    cursor: pointer !important;
+  }
+
+  .cs-mobile-mode-btn.is-active {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4) !important;
+  }
+
+  .cs-mobile-big-download-btn {
+    flex: 1 1 auto !important;
+    max-width: 170px !important;
+    height: 40px !important;
+    border: none !important;
+    border-radius: 999px !important;
+    background: linear-gradient(135deg, #f59e0b, #eab308) !important;
+    color: #ffffff !important;
+    font-size: 13px !important;
+    font-weight: 1000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35) !important;
+  }
+
+  /* Template Gallery: Infinite-feel 4-column scrollable cards */
+  .cs-template-gallery-panel {
+    background: #191838 !important;
+    border: 1px solid #2d2b56 !important;
+    border-radius: 20px !important;
+    padding: 14px 10px !important;
+    width: 100% !important;
+  }
+
+  .cs-template-gallery-header {
+    display: none !important; /* Search bar hide karke clean mobile list */
+  }
+
+  .cs-template-gallery-toolbar {
+    margin-bottom: 10px !important;
+  }
+
+  .cs-template-count-chip {
+    background: #25234d !important;
+    border-color: #3b376b !important;
+    color: #f1f5f9 !important;
+  }
+
+  .cs-template-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    max-height: 480px !important;
+    overflow-y: auto !important;
+    padding-right: 2px !important;
+    scrollbar-width: thin !important;
+  }
+
+  .cs-template-card {
+    background: #25234d !important;
+    border: 1.5px solid #383563 !important;
+    border-radius: 12px !important;
+    padding: 3px !important;
+  }
+
+  .cs-template-card.is-selected {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 2px #f59e0b !important;
+  }
+
+  .cs-template-card > .cs-template-tag {
+    color: #e2e8f0 !important;
+    font-size: 8.5px !important;
+    padding: 4px 0 2px !important;
+  }
+
+  .cs-template-gallery-actions {
+    display: none !important; /* Bottom button hide, kyunki upar Download button hai */
+  }
+}
+/* =========================================================
+   EXACT MOBILE APP WORKSPACE (MATCHING 2ND REFERENCE SCREEN)
+   ========================================================= */
+@media screen and (max-width: 820px) {
+  /* 1. Page background & clean reset */
+  html, body {
+    overflow-x: hidden !important;
+  }
+
+  .cs-page {
+    padding: 0 0 60px 0 !important;
+    background: #090a1a !important; /* Pure deep dark app background */
+    overflow-x: hidden !important;
+  }
+
+  /* Hide external desktop headers if present */
+  .cs-header,
+  .aarsh-studio-nav,
+  .cs-home-hero-shell,
+  .cs-home-categories-title-strip {
+    display: none !important;
+  }
+
+  .cs-template-page {
+    background: transparent !important;
+    border: none !important;
+    padding: 10px 14px !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Top Bar: Reference app jaisa sleek header */
+  .cs-template-topbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 6px 4px 12px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .cs-rank-back {
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-size: 26px !important;
+    line-height: 1 !important;
+    padding: 4px 8px !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+  }
+
+  .cs-mobile-app-header-title {
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+  }
+
+  .cs-rank-badge {
+    background: transparent !important;
+    border: none !important;
+    color: #cbd5e1 !important;
+    font-size: 20px !important;
+    padding: 4px 8px !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+  }
+
+  /* 3. Single Column Centered Layout */
+  .cs-template-workspace {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+  }
+
+  .cs-template-left-column {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .cs-template-featured {
+    width: 100% !important;
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .cs-template-featured-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  /* 4. Poster: Compact scale so it fits on screen nicely */
+  .cs-reference-preview {
+    width: min(85vw, 310px) !important;
+    max-width: 310px !important;
+    margin: 0 auto !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  .cs-template-preview-toolbar,
+  .cs-template-left-hint,
+  .cs-template-featured-meta {
+    display: none !important;
+  }
+
+  /* 5. Leader Photos Strip */
+  .cs-leader-picker-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #12132b !important;
+    border: 1px solid #23254e !important;
+    border-radius: 16px !important;
+    padding: 10px !important;
+    margin: 12px 0 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .cs-leader-picker-header {
+    margin-bottom: 8px !important;
+  }
+
+  .cs-leader-picker-header span {
+    color: #e2e8f0 !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+  }
+
+  .cs-leader-thumb-btn,
+  .cs-leader-upload-tile {
+    width: 62px !important;
+    height: 72px !important;
+    min-width: 62px !important;
+    flex: 0 0 62px !important;
+    border-radius: 12px !important;
+    background: #1c1d3d !important;
+    border: 1.5px solid #2d3063 !important;
+  }
+
+  .cs-leader-thumb-btn.is-selected {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 2px #38bdf8 !important;
+  }
+
+  /* 6. Action Row: Image/Video + Download Button */
+  .cs-mobile-quick-actions-strip {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin: 10px 0 14px !important;
+    padding: 0 4px !important;
+    box-sizing: border-box !important;
+  }
+
+  .cs-mobile-mode-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    background: #1c1d3d !important;
+    border: 1px solid #2d3063 !important;
+    border-radius: 999px !important;
+    padding: 3px !important;
+  }
+
+  .cs-mobile-mode-btn {
+    border: none !important;
+    background: transparent !important;
+    color: #94a3b8 !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    padding: 6px 14px !important;
+    border-radius: 999px !important;
+    cursor: pointer !important;
+  }
+
+  .cs-mobile-mode-btn.is-active {
+    background: #f59e0b !important;
+    color: #0f172a !important;
+    font-weight: 1000 !important;
+  }
+
+  .cs-mobile-big-download-btn {
+    height: 38px !important;
+    padding: 0 24px !important;
+    border: none !important;
+    border-radius: 999px !important;
+    background: #f59e0b !important;
+    color: #0f172a !important;
+    font-size: 13px !important;
+    font-weight: 1000 !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4) !important;
+  }
+
+  /* 7. Template Cards Grid: Vertical Scrollable 4 per row */
+  .cs-template-gallery-panel {
+    width: 100% !important;
+    background: #12132b !important;
+    border: 1px solid #23254e !important;
+    border-radius: 18px !important;
+    padding: 12px 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .cs-template-gallery-header {
+    display: none !important;
+  }
+
+  .cs-template-gallery-toolbar {
+    padding: 0 4px 8px !important;
+    margin: 0 !important;
+  }
+
+  .cs-template-count-chip {
+    background: #1c1d3d !important;
+    border-color: #2d3063 !important;
+    color: #cbd5e1 !important;
+    font-size: 10px !important;
+  }
+
+  .cs-template-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    max-height: 420px !important;
+    overflow-y: auto !important;
+    padding: 2px !important;
+  }
+
+  .cs-template-card {
+    background: #1c1d3d !important;
+    border: 1px solid #2d3063 !important;
+    border-radius: 10px !important;
+    padding: 3px !important;
+  }
+
+  .cs-template-card.is-selected {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 2px #f59e0b !important;
+  }
+
+  .cs-template-card > .cs-template-tag {
+    color: #cbd5e1 !important;
+    font-size: 8px !important;
+    padding: 3px 0 1px !important;
+  }
+
+  .cs-template-gallery-actions {
+    display: none !important;
+  }
+}
+/* Leader strip clean single-line styling */
+.cs-leader-picker-box {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 6px 0 !important;
+}
+
+.cs-leader-picker-strip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  overflow-x: auto !important;
+  padding: 4px 2px !important;
+}
+
+.cs-leader-thumb-btn {
+  width: 66px !important;
+  height: 78px !important;
+  min-width: 66px !important;
+  flex: 0 0 66px !important;
+  border-radius: 14px !important;
+  background: #1f2042 !important;
+  border: 2px solid #353768 !important;
+}
+
+.cs-leader-thumb-btn.is-selected {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px #38bdf8 !important;
+}
+
+.cs-leader-add-tile {
+  width: 66px !important;
+  height: 78px !important;
+  min-width: 66px !important;
+  flex: 0 0 66px !important;
+  border-radius: 14px !important;
 }
