@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import './App.css';
 import LeaderStyleDemo from './LeaderStyleDemo';
+import WhatsAppFloatingButton from './components/WhatsAppFloatingButton';
 import CreativeStudio from './creative/CreativeStudio';
 import { auth, googleProvider, db } from './firebase';
 import {
@@ -2132,7 +2133,8 @@ function AarshApp() {
   // =========================================================
   if (!user || !profileReady) {
     return (
-      <div className="aarsh-auth-viewport">
+  <div className="aarsh-auth-viewport">
+    <WhatsAppFloatingButton />
         <div className="aarsh-auth-container">
           {/* LEFT: HERO & SHOWCASE SECTION */}
           <div className="aarsh-auth-hero">
@@ -2470,14 +2472,14 @@ function AarshApp() {
 };
 
   return (
-
-    <div
-      className="aarsh-page-root min-h-screen bg-cover bg-center overflow-x-hidden"
-      style={{
-        backgroundImage:
-          `linear-gradient(135deg, #FFD6E8 0%, #E9D5FF 50%, #BFDBFE 100%)`
-      }}
-    >
+  <div
+    className="aarsh-page-root min-h-screen bg-cover bg-center overflow-x-hidden"
+    style={{
+      backgroundImage:
+        `linear-gradient(135deg, #FFD6E8 0%, #E9D5FF 50%, #BFDBFE 100%)`
+    }}
+  >
+    <WhatsAppFloatingButton />
 
       {/* PREMIUM AARSH HEADER — REFERENCE MATCH */}
       <header className="aarsh-top-header relative z-[100] px-2 md:px-4 pt-2 md:pt-3">
