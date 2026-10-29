@@ -8199,3 +8199,29 @@ body,
   .aarsh-mobile-hero-inner > * { min-width: 0 !important; }
   .aarsh-mobile-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
+
+
+/* Aarsh responsive safety layer — appended after legacy rules */
+*, *::before, *::after { box-sizing: border-box; }
+html { width: 100%; max-width: 100%; }
+body, #root { width: 100%; max-width: 100%; min-width: 0; }
+img, video, canvas, svg { max-width: 100%; }
+button, input, select, textarea { max-width: 100%; }
+
+@media (max-width: 767px) {
+  #root, main, [role="main"] { min-width: 0; }
+  .aarsh-page-root, .aarsh-page-root main, .aarsh-creative-studio-viewport,
+  .aarsh-mobile-hero, .aarsh-mobile-hero-inner, .aarsh-mobile-stats,
+  .aarsh-mobile-studio-grid, .aarsh-mobile-studio-card {
+    min-width: 0 !important; max-width: 100% !important;
+  }
+  .aarsh-page-root main { padding-left: clamp(10px, 3vw, 16px) !important; padding-right: clamp(10px, 3vw, 16px) !important; }
+  .aarsh-mobile-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .aarsh-mobile-studio-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .aarsh-mobile-studio-card, .aarsh-mobile-studio-card * { min-width: 0; }
+  .aarsh-mobile-studio-card h2, .aarsh-mobile-studio-card h3, .aarsh-mobile-studio-card p { overflow-wrap: anywhere; }
+}
+@media (max-width: 360px) {
+  .aarsh-page-root main { padding-left: 8px !important; padding-right: 8px !important; }
+  .aarsh-mobile-stats { gap: 8px !important; }
+}

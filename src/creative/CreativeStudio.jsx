@@ -53,7 +53,7 @@ const getCategoryTemplateUrl = (category, no) => {
 };
 
 // 🎯 Auto-Fallback Image Component: Jo bhi extension hogi bina atke load kar lega
-function SmartTemplateImage({ category, no, alt, className, style }) {
+function SmartTemplateImage({ category, no, alt, className, style, loading = "lazy", fetchPriority }) {
   const candidates = getTemplateCandidates(category, no);
   const [currIndex, setCurrIndex] = useState(0);
 
@@ -68,8 +68,9 @@ function SmartTemplateImage({ category, no, alt, className, style }) {
       alt={alt}
       className={className}
       style={style}
-      loading="eager"
-      decoding="sync"
+      loading={loading}
+      fetchPriority={fetchPriority || (loading === "eager" ? "high" : "auto")}
+      decoding="async"
       draggable="false"
       onError={() => {
         setCurrIndex((prev) => (prev + 1 < candidates.length ? prev + 1 : prev));
@@ -245,8 +246,8 @@ const FINAL_COORDS = {
   leaderPhone:       { x: 122, y: 1171, w: 160, h: 25, size: 21 },
   uplinesRow:        { x: 186, y: 26,  w: 440, h: 34, size: 34 },
   asclepias:         { x: 5,   y: 2,   w: 170, h: 80 },
-  fighterLogo:       { x: 627, y: 18,  w: 132, h: 50 },
-  fighterText:       { x: 749, y: 8,   w: 150, h: 57 }
+  fighterLogo:       { x: 627, y: 21,  w: 132, h: 50 },
+  fighterText:       { x: 749, y: 21,   w: 150, h: 57 }
 };
 
 // 🎯 WELCOME BANNER COORDINATES (1600 x 1600)
@@ -446,6 +447,8 @@ function ReferenceTemplatePreview({
           no={template}
           alt={`Template ${template}`}
           className="cs-reference-preview-bg"
+          loading="eager"
+          fetchPriority="high"
         />
 
         {/* LOGOS FOR RANK PROMOTION */}
@@ -528,7 +531,15 @@ function ReferenceTemplatePreview({
             <img 
               src={achImg} 
               alt="Achiever" 
-              style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center bottom' }} 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                objectPosition: 'center bottom',
+                // Blend the bottom of the cutout into the template background.
+                WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 89%, rgba(0,0,0,0.88) 94%, rgba(0,0,0,0.58) 98%, rgba(0,0,0,0.18) 100%)',
+                maskImage: 'linear-gradient(to bottom, #000 0%, #000 89%, rgba(0,0,0,0.88) 94%, rgba(0,0,0,0.58) 98%, rgba(0,0,0,0.18) 100%)'
+              }} 
             />
           </div>
         )}
@@ -566,7 +577,20 @@ function ReferenceTemplatePreview({
             zIndex: 12, 
             background: 'transparent'
           }}>
-            <img src={activeLeaderPhoto} alt="Leader" style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center bottom', display: 'block' }} />
+            <img
+              src={activeLeaderPhoto}
+              alt="Leader"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                objectPosition: 'center bottom',
+                display: 'block',
+                // Match the soft bottom fade used on the achiever photo.
+                WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 89%, rgba(0,0,0,0.88) 94%, rgba(0,0,0,0.58) 98%, rgba(0,0,0,0.18) 100%)',
+                maskImage: 'linear-gradient(to bottom, #000 0%, #000 89%, rgba(0,0,0,0.88) 94%, rgba(0,0,0,0.58) 98%, rgba(0,0,0,0.18) 100%)'
+              }}
+            />
           </div>
         )}
 
@@ -916,8 +940,14 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
   const loadExportImage = (src) => new Promise((resolve, reject) => {
     if (!src) return resolve(null);
     const image = new Image();
+    // Set CORS mode BEFORE src for remote assets that permit anonymous CORS.
+    // Same-origin and blob/data URLs continue to work normally.
+    if (/^https?:\/\//i.test(src) && new URL(src, window.location.href).origin !== window.location.origin) {
+      image.crossOrigin = 'anonymous';
+    }
+    image.decoding = 'async';
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Image load failed: ${src}`));
+    image.onerror = () => reject(new Error(`Image load failed (check asset URL/CORS permissions): ${src}`));
     image.src = src;
   });
 
@@ -968,10 +998,38 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
       const image = await loadExportImage(src);
       if (!image) return;
       const b = box(c);
-      const scale = Math.min(b.w / image.naturalWidth, b.h / image.naturalHeight);
+
+      // Render each cutout on its own canvas so the fade mask never affects
+      // the template or any other poster elements.
+      const photoCanvas = document.createElement('canvas');
+      photoCanvas.width = Math.max(1, Math.round(b.w));
+      photoCanvas.height = Math.max(1, Math.round(b.h));
+      const photoCtx = photoCanvas.getContext('2d');
+      if (!photoCtx) {
+        const scale = Math.min(b.w / image.naturalWidth, b.h / image.naturalHeight);
+        const w = image.naturalWidth * scale;
+        const h = image.naturalHeight * scale;
+        ctx.drawImage(image, b.x + (b.w - w) / 2, b.y + (b.h - h), w, h);
+        return;
+      }
+
+      const scale = Math.min(photoCanvas.width / image.naturalWidth, photoCanvas.height / image.naturalHeight);
       const w = image.naturalWidth * scale;
       const h = image.naturalHeight * scale;
-      ctx.drawImage(image, b.x + (b.w - w) / 2, b.y + (b.h - h), w, h);
+      photoCtx.drawImage(image, (photoCanvas.width - w) / 2, photoCanvas.height - h, w, h);
+
+      // Keep the face and upper body crisp; fade only the lower part.
+      const fade = photoCtx.createLinearGradient(0, photoCanvas.height * 0.90, 0, photoCanvas.height);
+      fade.addColorStop(0, 'rgba(0,0,0,1)');
+      fade.addColorStop(0.55, 'rgba(0,0,0,0.82)');
+      fade.addColorStop(0.88, 'rgba(0,0,0,0.48)');
+      fade.addColorStop(1, 'rgba(0,0,0,0.18)');
+      photoCtx.globalCompositeOperation = 'destination-in';
+      photoCtx.fillStyle = fade;
+      photoCtx.fillRect(0, 0, photoCanvas.width, photoCanvas.height);
+      photoCtx.globalCompositeOperation = 'source-over';
+
+      ctx.drawImage(photoCanvas, b.x, b.y, b.w, b.h);
     };
 
     const drawContainCenter = async (src, c) => {
@@ -2395,6 +2453,8 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
                   category={activeCategory}
                   no={selectedTemplate}
                   alt={`Selected template ${selectedTemplate}`}
+                  loading="eager"
+                  fetchPriority="high"
                 />
                 <div>
                   <b>{[achieverDetails.salutation, achieverDetails.firstName, achieverDetails.lastName].filter(Boolean).join(' ')}</b>
