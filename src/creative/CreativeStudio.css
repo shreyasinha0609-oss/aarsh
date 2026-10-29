@@ -4481,3 +4481,161 @@
   flex: 0 0 66px !important;
   border-radius: 14px !important;
 }
+/* =========================================
+   AARSH DIGITAL — AUTOMATIC SCREEN ADJUSTMENT
+   Responsive layout fix
+   ========================================= */
+
+.cs-page,
+.cs-page * {
+  box-sizing: border-box;
+}
+
+.cs-page,
+.aarsh-creative-studio-viewport,
+.aarsh-studio-content-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cs-home-cards-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  width: 100%;
+  min-width: 0;
+}
+
+.cs-card-featured-rank,
+.cs-card-normal-cat {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.cs-rank-square-grid {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  width: 100%;
+  min-width: 0;
+}
+
+.cs-template-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  width: 100%;
+  min-width: 0;
+}
+
+.cs-home-hero-shell,
+.aarsh-achiever-hero {
+  width: 100%;
+  min-width: 0;
+}
+
+.cs-home-hero-left,
+.cs-home-hero-right {
+  min-width: 0;
+}
+
+.cs-home-hero-right img,
+.cs-template-grid img,
+.cs-rank-square-grid img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 1100px) {
+  .cs-home-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .cs-rank-square-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .cs-template-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .cs-home-hero-shell {
+    flex-direction: column;
+    padding: 20px 16px;
+  }
+
+  .cs-home-hero-left,
+  .cs-home-hero-right {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .cs-home-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .cs-rank-square-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .cs-template-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .aarsh-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .aarsh-achiever-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .aarsh-creative-studio-viewport {
+    padding: 12px 10px 24px;
+  }
+}
+
+@media (max-width: 420px) {
+  .cs-home-cards-grid {
+    gap: 8px !important;
+  }
+
+  .cs-card-featured-rank,
+  .cs-card-normal-cat {
+    padding: 10px !important;
+  }
+
+  .cs-rank-square-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .cs-template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .cs-home-hero-title {
+    font-size: clamp(28px, 8vw, 36px) !important;
+    overflow-wrap: anywhere;
+  }
+}
+
+html,
+body,
+#root {
+  max-width: 100%;
+  min-width: 0;
+}
+
+body {
+  overflow-x: hidden;
+}

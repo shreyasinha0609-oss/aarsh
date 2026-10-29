@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { auth } from '../firebase';
-import { getOptimizedImagePath } from '../imageUtils.js';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
+import { removeBackground } from '@imgly/background-removal';
 import './CreativeStudio.css';
 
 const MAX_BANNER_PEOPLE = 22;
 const RANK_TEMPLATE_COUNT = 45;
-const RANK_TEMPLATE_BASE = '/optimized-images/rank-common-4k';
+const RANK_TEMPLATE_BASE = '/templates/rank-common-4k';
 const WELCOME_TEMPLATE_COUNT = 11;
 const WELCOME_TEMPLATE_BASE = '/templates/welcome';
 const CLOSING_TEMPLATE_COUNT = 11;
@@ -13,19 +15,20 @@ const CLOSING_TEMPLATE_BASE = '/templates/closing';
 
 const getRankTemplateUrl = (no) => {
   const padded = String(no).padStart(2, '0');
-  return `${RANK_TEMPLATE_BASE}/${padded}.webp`;
+  return `${RANK_TEMPLATE_BASE}/${padded}.jpeg`;
 };
 
 // 🎯 Har category ke liye possible candidate file paths (1-11 sab load honge)
 const getTemplateCandidates = (category, no) => {
   const num = String(no);
   const padded = num.padStart(2, '0');
+  const base = category === 'welcome' 
+    ? WELCOME_TEMPLATE_BASE 
+    : category === 'closing' 
+      ? CLOSING_TEMPLATE_BASE 
+      : RANK_TEMPLATE_BASE;
 
   if (category === 'welcome' || category === 'closing') {
-    const base = category === 'welcome'
-      ? WELCOME_TEMPLATE_BASE
-      : CLOSING_TEMPLATE_BASE;
-
     return Array.from(new Set([
       `${base}/${num}.jpg`,
       `${base}/${padded}.jpg`,
@@ -36,16 +39,13 @@ const getTemplateCandidates = (category, no) => {
     ]));
   }
 
-  return [
-    `${RANK_TEMPLATE_BASE}/${padded}.webp`,
-    `${RANK_TEMPLATE_BASE}/${padded}.png`,
-    `${RANK_TEMPLATE_BASE}/${padded}.jpeg`,
-    `${RANK_TEMPLATE_BASE}/${padded}.jpg`,
-    `${RANK_TEMPLATE_BASE}/${num}.webp`,
-    `${RANK_TEMPLATE_BASE}/${num}.png`,
-    `${RANK_TEMPLATE_BASE}/${num}.jpeg`,
-    `${RANK_TEMPLATE_BASE}/${num}.jpg`
-  ];
+  return Array.from(new Set([
+    `${base}/${padded}.jpeg`,
+    `${base}/${padded}.jpg`,
+    `${base}/${padded}.png`,
+    `${base}/${num}.jpeg`,
+    `${base}/${num}.jpg`
+  ]));
 };
 
 const getCategoryTemplateUrl = (category, no) => {
@@ -128,42 +128,75 @@ const RANK_ASSETS = [
   'Brand_Ambassador.png'
 ];
 
-const RANK_OPTIONS = RANKS.map((label, index) => {
-  const originalImage = `/rank-assets/${RANK_ASSETS[index]}`;
-
-  return {
-    id: label,
-    label: label.replace(/^Rank\s+\d+:\s*/, ''),
-    rank: index + 1,
-    theme: RANK_THEMES[index],
-    image: getOptimizedImagePath(originalImage)
-  };
-});
+const RANK_OPTIONS = RANKS.map((label, index) => ({
+  id: label,
+  label: label.replace(/^Rank\s+\d+:\s*/, ''),
+  rank: index + 1,
+  theme: RANK_THEMES[index],
+  image: `/rank-assets/${RANK_ASSETS[index]}`
+}));
 
 const STORAGE_KEY = 'aarsh-creative-banner-settings-v1';
+
+// Shared, permanent Cloudinary assets. These URLs are the defaults for every device.
+const DEFAULT_BANNER_ASSETS = {
+  fighterLogo: 'https://res.cloudinary.com/httsesgq/image/upload/v1793255694/fighter_logo.png',
+  fighterStudio: 'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/fighter_success_system_logo.png',
+  asclepiasLogo: 'https://res.cloudinary.com/httsesgq/image/upload/v1793255696/asclepias_logo.png',
+};
+const DEFAULT_UPLINE_PHOTOS = [
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255694/upline_01.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255694/upline_02.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/upline_03.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/upline_04.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255694/upline_05.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/upline_06.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/upline_07.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/upline_08.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/upline_09.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/upline_10.png',
+  'https://res.cloudinary.com/httsesgq/image/upload/v1793255695/upline_11.png',
+];
+
+const DEFAULT_BANNER_SETTINGS = {
+  ...DEFAULT_BANNER_ASSETS,
+  people: DEFAULT_UPLINE_PHOTOS.map((url, index) => ({
+    id: `cloudinary-upline-${index + 1}`,
+    url,
+    name: '',
+    role: 'Leader',
+    bgRemoved: false,
+  })),
+  showContactOnBanners: true,
+  contactNumber: '',
+  showRankOnBanners: true,
+  customRankName: '',
+  showSocialNameOnBanners: false,
+  socialName: '',
+  showUplinesRank: true,
+  showUplinesAchievements: false,
+  showUplinesBonanza: false,
+  showUplinesCapping: true,
+  showTeamLogo: true,
+  fighterSuccessSystem: true,
+  fighterTextSystem: true,
+};
 
 const readSettings = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {
-      asclepiasLogo: '', people: [], fighterLogo: '', fighterStudio: '',
-      showContactOnBanners: true, contactNumber: '',
-      showRankOnBanners: true, customRankName: '',
-      showSocialNameOnBanners: false, socialName: '',
-      showUplinesRank: true, showUplinesAchievements: false,
-      showUplinesBonanza: false, showUplinesCapping: true,
-      showTeamLogo: true, fighterSuccessSystem: true, fighterTextSystem: true
+    if (!raw) return DEFAULT_BANNER_SETTINGS;
+    const saved = JSON.parse(raw);
+    return {
+      ...DEFAULT_BANNER_SETTINGS,
+      ...saved,
+      // Existing user-created uplines take precedence; otherwise show the 11 shared defaults.
+      people: Array.isArray(saved.people) && saved.people.length
+        ? saved.people.slice(0, MAX_BANNER_PEOPLE)
+        : DEFAULT_BANNER_SETTINGS.people,
     };
   } catch {
-    return {
-      asclepiasLogo: '', people: [], fighterLogo: '', fighterStudio: '',
-      showContactOnBanners: true, contactNumber: '',
-      showRankOnBanners: true, customRankName: '',
-      showSocialNameOnBanners: false, socialName: '',
-      showUplinesRank: true, showUplinesAchievements: false,
-      showUplinesBonanza: false, showUplinesCapping: true,
-      showTeamLogo: true, fighterSuccessSystem: true, fighterTextSystem: true
-    };
+    return DEFAULT_BANNER_SETTINGS;
   }
 };
 
@@ -174,7 +207,8 @@ const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
   reader.readAsDataURL(blob);
 });
 
-const fileToDataUrl = (file, maxSide = 1200) => new Promise((resolve) => {
+// Keep uploaded settings images small enough for browser storage and mobile rendering.
+const fileToDataUrl = (file, maxSide = 640) => new Promise((resolve) => {
   if (!file) return resolve('');
   const reader = new FileReader();
   reader.onload = () => {
@@ -186,7 +220,7 @@ const fileToDataUrl = (file, maxSide = 1200) => new Promise((resolve) => {
       canvas.height = Math.max(1, Math.round(img.height * scale));
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.88));
+      resolve(canvas.toDataURL('image/jpeg', 0.68));
     };
     img.onerror = () => resolve(reader.result || '');
   };
@@ -623,14 +657,11 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
   const [cropX, setCropX] = useState(50);
   const [cropY, setCropY] = useState(30);
 
-  useEffect(() => {
-    localStorage.removeItem('aarsh-custom-coords');
-
-    const s = readSettings();
-    setPeople(Array.isArray(s.people) ? s.people.slice(0, MAX_BANNER_PEOPLE) : []);
-    setAsclepiasLogo(s.asclepiasLogo || '');
-    setFighterLogo(s.fighterLogo || '');
-    setFighterStudio(s.fighterStudio || '');
+  const applySettings = (s) => {
+    setPeople(Array.isArray(s.people) ? s.people.slice(0, MAX_BANNER_PEOPLE) : DEFAULT_BANNER_SETTINGS.people);
+    setAsclepiasLogo(s.asclepiasLogo || DEFAULT_BANNER_ASSETS.asclepiasLogo);
+    setFighterLogo(s.fighterLogo || DEFAULT_BANNER_ASSETS.fighterLogo);
+    setFighterStudio(s.fighterStudio || DEFAULT_BANNER_ASSETS.fighterStudio);
     setShowContactOnBanners(s.showContactOnBanners !== false);
     setContactNumber(s.contactNumber || '');
     setShowRankOnBanners(s.showRankOnBanners !== false);
@@ -644,6 +675,50 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
     setShowTeamLogo(s.showTeamLogo !== false);
     setFighterSuccessSystem(s.fighterSuccessSystem !== false);
     setFighterTextSystem(s.fighterTextSystem !== false);
+  };
+
+  useEffect(() => {
+    localStorage.removeItem('aarsh-custom-coords');
+    let cancelled = false;
+
+    // Use each signed-in user's own Firestore document; keep localStorage as a fallback.
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      const localSettings = readSettings();
+      if (!user) {
+        if (!cancelled) applySettings(localSettings);
+        return;
+      }
+
+      try {
+        const settingsRef = doc(db, 'users', user.uid, 'creativeStudio', 'bannerSettings');
+        const snapshot = await getDoc(settingsRef);
+        if (cancelled) return;
+
+        if (snapshot.exists()) {
+          const remoteSettings = {
+            ...DEFAULT_BANNER_SETTINGS,
+            ...snapshot.data(),
+          };
+          // Older saved settings may have no people array; keep the shared 11-photo defaults.
+          if (!Array.isArray(remoteSettings.people) || remoteSettings.people.length === 0) {
+            remoteSettings.people = DEFAULT_BANNER_SETTINGS.people;
+          }
+          applySettings(remoteSettings);
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteSettings)); } catch { /* Firestore remains primary */ }
+        } else {
+          applySettings(localSettings);
+          await setDoc(settingsRef, localSettings, { merge: true });
+        }
+      } catch (error) {
+        console.error('Could not load banner settings from Firestore:', error);
+        if (!cancelled) applySettings(localSettings);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -652,6 +727,7 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
 
   const persistSettings = (next = {}) => {
     const payload = {
+      ...DEFAULT_BANNER_SETTINGS,
       asclepiasLogo: next.asclepiasLogo ?? asclepiasLogo,
       people: next.people ?? people,
       fighterLogo: next.fighterLogo ?? fighterLogo,
@@ -670,13 +746,37 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
       fighterSuccessSystem: next.fighterSuccessSystem ?? fighterSuccessSystem,
       fighterTextSystem: next.fighterTextSystem ?? fighterTextSystem,
     };
+
+    let localSaved = false;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      setSavedMessage('Settings saved successfully!');
-    } catch {
-      setSavedMessage('Storage full, please clear some photos.');
+      localSaved = true;
+    } catch (error) {
+      console.error('Banner settings could not be saved locally:', error);
     }
-    window.setTimeout(() => setSavedMessage(''), 2200);
+
+    const user = auth.currentUser;
+    if (!user) {
+      setSavedMessage(localSaved
+        ? 'Saved on this device. Log in to sync across devices.'
+        : 'Could not save settings on this device.');
+      window.setTimeout(() => setSavedMessage(''), 2600);
+      return;
+    }
+
+    // Save to a dedicated per-user document, without changing the app's existing user profile.
+    setDoc(doc(db, 'users', user.uid, 'creativeStudio', 'bannerSettings'), {
+      ...payload,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true })
+      .then(() => setSavedMessage('Settings saved and synced successfully!'))
+      .catch((error) => {
+        console.error('Banner settings could not be synced to Firestore:', error);
+        setSavedMessage(localSaved
+          ? 'Saved on this device; cloud sync failed.'
+          : 'Could not save settings. Please try again.');
+      })
+      .finally(() => window.setTimeout(() => setSavedMessage(''), 2600));
   };
 
   const addPerson = async (file) => {
@@ -717,11 +817,9 @@ export default function CreativeStudio({ onBack, initialSettingsOpen = false, pr
   const executeBgRemoval = async (imageSource) => {
     try {
       setAchieverPhotoLoading(true);
-     const { removeBackground } = await import('@imgly/background-removal');
-
-const blob = await removeBackground(imageSource, {
-  output: { format: 'image/png', quality: 0.95 }
-});
+      const blob = await removeBackground(imageSource, {
+        output: { format: 'image/png', quality: 0.95 }
+      });
       const removedUrl = await blobToDataUrl(blob);
       setAchieverDetails(prev => ({ ...prev, removedUrl }));
       setActivePhotoStyle('cutout');
